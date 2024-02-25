@@ -1,0 +1,19 @@
+{
+  "extends": "@react-native/typescript-config/tsconfig.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "skipLibCheck": false, /* Skip type checking all .d.ts files. */
+    "jsx": "react",
+    "paths": {
+      "*": [
+        "src/*",
+      ],
+      "tests": [
+        "tests/*",
+      ],
+      "components/*": [
+        "src/components/*",
+      ],
+    },
+  }
+}
