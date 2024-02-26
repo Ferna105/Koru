@@ -37,6 +37,8 @@ export const Login = ({}: RootStackScreenProps<'Login'>) => {
   };
 
   const onPressGoogleBtn = async () => {
+    setAuthToken('TEST');
+
     // try {
     //   const { idToken } = await GoogleSignin.signIn();
     //   if (!idToken) {

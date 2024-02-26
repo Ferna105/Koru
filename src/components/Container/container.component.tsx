@@ -1,9 +1,16 @@
 import React from 'react';
-import { SafeAreaView, ScrollView, View } from 'react-native';
+import {
+  ImageBackground,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  View,
+} from 'react-native';
 
 import { ReactElement } from 'react';
 import { StyleProp, ViewStyle } from 'react-native';
 import { styles } from './container.styles';
+import { useTheme } from '@react-navigation/native';
 
 interface ContainerProps {
   children: ReactElement | ReactElement[];
@@ -29,9 +36,17 @@ export const Container = ({
   style,
   scrollable = false,
 }: ContainerProps) => {
+  const { colors } = useTheme();
+
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView
+      style={[styles.safeArea, { backgroundColor: colors.background }]}>
       <Content scrollable={scrollable}>
+        <ImageBackground
+          source={require('./container.png')}
+          resizeMode="contain"
+          style={StyleSheet.absoluteFill}
+        />
         <View style={[style, styles.container]}>{children}</View>
       </Content>
     </SafeAreaView>
