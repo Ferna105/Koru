@@ -20,6 +20,7 @@ export const JumpTestNavigator = ({}: RootStackScreenProps<'JumpTest'>) => {
         headerTintColor: colors.background,
         headerTitleStyle: { fontWeight: 'bold' },
         headerBackTitle: '',
+        orientation: 'portrait',
       }}>
       <Stack.Screen
         name="JumpTestHistory"
