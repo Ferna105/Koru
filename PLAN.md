@@ -105,8 +105,8 @@ Storage key: `koru:tests:JUMP:history`. Se guardan los últimos N (ej. 50). Al b
 | **0. Setup** | ✅ | Deps + permisos + Reanimated plugin + Kotlin 2.0 + Android disk bump |
 | **1. Tab Tests** | ✅ | Pantalla "Mis tests" + catálogo + card SALTOS con badge PROBALO |
 | **2. Stack JumpTest + History** | ✅ | Header amarillo + pantalla historial (estado vacío) |
-| **3. Explanation** | siguiente | Copy adaptado a "filmar pisada en primer plano" |
-| **4. Record** | pending | VisionCamera + record button + timer + permisos |
+| **3. Explanation** | ✅ | Copy adaptado a "filmar pisada en primer plano" |
+| **4. Record** | siguiente | VisionCamera + record button + timer + permisos |
 | **5. Editor** | pending | Video player + frame strip + brackets rojos + seek en drag |
 | **6. Result** | pending | Cálculo + altura + persistencia + share |
 | **7. History poblada** | pending | Lista + best-stat card |
@@ -128,6 +128,13 @@ Storage key: `koru:tests:JUMP:history`. Se guardan los últimos N (ej. 50). Al b
 - Tab bar con labels en mayúscula: HOME, TESTS, CUENTA. La tab `Profile` se renombró visualmente como CUENTA (matchea Figma) sin tocar la `route name`.
 - Catálogo en `tests.catalog.ts`: para sumar un test nuevo basta con agregar una entrada al array (id, title, featured) + crear su stack en Fase 2 y mapearlo en `navigation/index.tsx`.
 - Decisión: el badge "★ PROBALO" se renderiza con un caracter unicode en lugar de un SVG. Si más adelante queremos un star pixel-perfect del Figma, lo migramos a SVG.
+
+## Notas de Fase 3
+
+- Layout: `ScrollView` + footer fijo con el botón "EMPEZAR A FILMAR" fuera del scroll.
+- Pasos numerados: badge rojo circular + texto a la derecha con `flex: 1` para wrapping correcto.
+- Tip en recuadro con borde amarillo (`colors.card`).
+- Navega a `JumpTestRecord` al presionar el CTA.
 
 ## Notas de Fase 0 (post-instalación)
 
