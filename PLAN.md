@@ -106,9 +106,9 @@ Storage key: `koru:tests:JUMP:history`. Se guardan los últimos N (ej. 50). Al b
 | **1. Tab Tests** | ✅ | Pantalla "Mis tests" + catálogo + card SALTOS con badge PROBALO |
 | **2. Stack JumpTest + History** | ✅ | Header amarillo + pantalla historial (estado vacío) |
 | **3. Explanation** | ✅ | Copy adaptado a "filmar pisada en primer plano" |
-| **4. Record** | siguiente | VisionCamera + record button + timer + permisos |
-| **5. Editor** | pending | Video player + frame strip + brackets rojos + seek en drag |
-| **6. Result** | pending | Cálculo + altura + persistencia + share |
+| **4. Record** | ✅ | VisionCamera + permisos cám/mic + countdown + REC + switch front/back |
+| **5. Editor** | ✅ | Video + timeline + brackets draggables + step ±1f + loop + cálculo |
+| **6. Result** | siguiente | Cálculo + altura + persistencia + share |
 | **7. History poblada** | pending | Lista + best-stat card |
 | **8. Polish** | pending | Estados error/empty + animaciones + cleanup files |
 
@@ -135,6 +135,20 @@ Storage key: `koru:tests:JUMP:history`. Se guardan los últimos N (ej. 50). Al b
 - Pasos numerados: badge rojo circular + texto a la derecha con `flex: 1` para wrapping correcto.
 - Tip en recuadro con borde amarillo (`colors.card`).
 - Navega a `JumpTestRecord` al presionar el CTA.
+
+## Notas de Fase 4
+
+- Pantalla full-screen sin header (`headerShown: false`).
+- Stack `JumpTest` forzado a `orientation: 'portrait'` desde `screenOptions`.
+- Permisos: pide cámara + micrófono al montar usando `useCameraPermission` + `useMicrophonePermission` de Vision-Camera. Si alguno está denegado, render bloqueado con copy explicativo + botón "ABRIR CONFIGURACIÓN" (`Linking.openSettings()`) + "VOLVER".
+- Lente por defecto: trasera. Botón ↺ arriba-derecha permite alternar a frontal mientras esté en `idle`.
+- FPS: usa `useCameraFormat` con prioridad `{ fps: 60 }` → si el device soporta 60 fps los pide, si no fallback 30 fps.
+- Estados internos: `idle | countdown | recording`.
+  - `idle`: preview + ✕ (top-left, vuelve) + ↺ (top-right, switch lens) + hint "Apuntá la cámara a tu pie" + cuadro punteado centrado (60% ancho, `borderStyle: 'dashed'`) + botón REC redondo grande abajo.
+  - `countdown`: 3 → 2 → 1 con texto blanco gigante (160px), shadow para legibilidad. Tap al botón cancela.
+  - `recording`: badge "● REC" parpadeando (intervalo 500 ms) + botón cuadrado rojo abajo (stop manual, sin tope de tiempo).
+- `Camera.startRecording` con `fileType: 'mp4'`. En `onRecordingFinished` se prepende `file://` para Android (donde el path llega sin scheme) y se navega a `JumpTestEditor` con `videoUri` + `durationMs` (en ms).
+- Cleanup: limpia `setTimeout` y `setInterval` en unmount; `isActive` de la cámara se sincroniza con `useFocusEffect` + `AppState` para no consumir recursos cuando la pantalla no está visible.
 
 ## Notas de Fase 0 (post-instalación)
 

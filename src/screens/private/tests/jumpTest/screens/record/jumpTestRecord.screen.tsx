@@ -153,6 +153,7 @@ export const JumpTestRecord = ({
           navigation.navigate('JumpTestEditor', {
             videoUri: uri,
             durationMs,
+            fps: targetFps,
           });
         },
         onRecordingError: error => {

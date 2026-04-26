@@ -1,18 +1,444 @@
-import React from 'react';
-import { View, StyleSheet } from 'react-native';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import {
+  View,
+  StyleSheet,
+  TouchableOpacity,
+  LayoutChangeEvent,
+  GestureResponderEvent,
+} from 'react-native';
+import Video, { VideoRef, OnLoadData, OnProgressData } from 'react-native-video';
 import { useTheme } from '@react-navigation/native';
-import { Text } from 'components';
+import { Button, Text } from 'components';
 import { JumpTestStackScreenProps } from 'navigation/types';
+import { Sizing } from 'utils/sizing';
+import { airtimeToHeightCm, formatMs } from '../../jumpTest.physics';
 
-export const JumpTestEditor = ({}: JumpTestStackScreenProps<'JumpTestEditor'>) => {
+type Handle = 'start' | 'end';
+
+const HANDLE_HIT = 28;
+const TIMELINE_HEIGHT = 56;
+const MIN_AIRTIME_MS = 50;
+
+export const JumpTestEditor = ({
+  route,
+  navigation,
+}: JumpTestStackScreenProps<'JumpTestEditor'>) => {
   const { colors } = useTheme();
+  const { videoUri, durationMs: durationFromParams, fps = 30 } = route.params;
+
+  const videoRef = useRef<VideoRef>(null);
+  const [durationMs, setDurationMs] = useState(durationFromParams || 0);
+  const [startMs, setStartMs] = useState(0);
+  const [endMs, setEndMs] = useState(durationFromParams || 0);
+  const [activeHandle, setActiveHandle] = useState<Handle>('start');
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [trackWidth, setTrackWidth] = useState(0);
+  const [videoSize, setVideoSize] = useState<{
+    width: number;
+    height: number;
+  } | null>(null);
+
+  const draggingRef = useRef<Handle | null>(null);
+  const frameMs = 1000 / Math.max(1, fps);
+
+  useEffect(() => {
+    if (durationMs > 0 && endMs === 0) {
+      setEndMs(durationMs);
+    }
+  }, [durationMs, endMs]);
+
+  const onLoad = (data: OnLoadData) => {
+    const ms = Math.round((data.duration ?? 0) * 1000);
+    if (ms > 0 && Math.abs(ms - durationMs) > 50) {
+      setDurationMs(ms);
+      if (endMs === 0 || endMs > ms) {
+        setEndMs(ms);
+      }
+    }
+    if (data.naturalSize) {
+      setVideoSize({
+        width: data.naturalSize.width,
+        height: data.naturalSize.height,
+      });
+    }
+  };
+
+  const onProgress = (data: OnProgressData) => {
+    if (!isPlaying) return;
+    const currentMs = Math.round(data.currentTime * 1000);
+    if (currentMs >= endMs - 16) {
+      videoRef.current?.seek(startMs / 1000);
+    }
+  };
+
+  const seekTo = (ms: number) => {
+    videoRef.current?.seek(ms / 1000);
+  };
+
+  const xToMs = (x: number) => {
+    if (trackWidth <= 0 || durationMs <= 0) return 0;
+    const ratio = Math.min(1, Math.max(0, x / trackWidth));
+    return Math.round(ratio * durationMs);
+  };
+
+  const msToX = (ms: number) => {
+    if (durationMs <= 0) return 0;
+    const ratio = Math.min(1, Math.max(0, ms / durationMs));
+    return ratio * trackWidth;
+  };
+
+  const updateHandle = (handle: Handle, value: number) => {
+    if (handle === 'start') {
+      const clamped = Math.max(0, Math.min(value, endMs - MIN_AIRTIME_MS));
+      setStartMs(clamped);
+      seekTo(clamped);
+    } else {
+      const clamped = Math.min(
+        durationMs,
+        Math.max(value, startMs + MIN_AIRTIME_MS),
+      );
+      setEndMs(clamped);
+      seekTo(clamped);
+    }
+    setActiveHandle(handle);
+  };
+
+  const pickClosestHandle = (touchMs: number): Handle => {
+    const distStart = Math.abs(touchMs - startMs);
+    const distEnd = Math.abs(touchMs - endMs);
+    return distStart <= distEnd ? 'start' : 'end';
+  };
+
+  const onTouchStart = (e: GestureResponderEvent) => {
+    if (trackWidth <= 0) return;
+    setIsPlaying(false);
+    const touchX = e.nativeEvent.locationX;
+    const touchMs = xToMs(touchX);
+    const handle = pickClosestHandle(touchMs);
+    draggingRef.current = handle;
+    updateHandle(handle, touchMs);
+  };
+
+  const onTouchMove = (e: GestureResponderEvent) => {
+    const handle = draggingRef.current;
+    if (!handle) return;
+    const touchX = e.nativeEvent.locationX;
+    updateHandle(handle, xToMs(touchX));
+  };
+
+  const onTouchEnd = () => {
+    draggingRef.current = null;
+  };
+
+  const stepFrame = (handle: Handle, dir: -1 | 1) => {
+    const current = handle === 'start' ? startMs : endMs;
+    updateHandle(handle, current + dir * frameMs);
+  };
+
+  const togglePlay = () => {
+    if (!isPlaying) {
+      seekTo(startMs);
+      setIsPlaying(true);
+    } else {
+      setIsPlaying(false);
+    }
+  };
+
+  const onLayoutTrack = (e: LayoutChangeEvent) => {
+    setTrackWidth(e.nativeEvent.layout.width);
+  };
+
+  const goCalculate = () => {
+    const airtimeMs = Math.max(0, endMs - startMs);
+    const heightCm = Math.round(airtimeToHeightCm(airtimeMs) * 10) / 10;
+    navigation.navigate('JumpTestResult', {
+      videoUri,
+      startMs,
+      endMs,
+      heightCm,
+    });
+  };
+
+  const goBackToRecord = () => {
+    navigation.goBack();
+  };
+
+  const airtimeMs = Math.max(0, endMs - startMs);
+  const startX = msToX(startMs);
+  const endX = msToX(endMs);
+
+  const aspectRatio = useMemo(() => {
+    if (videoSize && videoSize.width && videoSize.height) {
+      return videoSize.width / videoSize.height;
+    }
+    return 9 / 16;
+  }, [videoSize]);
+
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <Text>Editor — próximamente</Text>
+    <View style={[styles.screen, { backgroundColor: colors.background }]}>
+      <View style={[styles.videoWrapper, { aspectRatio }]}>
+        <Video
+          ref={videoRef}
+          source={{ uri: videoUri }}
+          style={StyleSheet.absoluteFill}
+          paused={!isPlaying}
+          repeat={false}
+          resizeMode="contain"
+          onLoad={onLoad}
+          onProgress={onProgress}
+          progressUpdateInterval={50}
+          muted
+        />
+      </View>
+
+      <View style={styles.body}>
+        <View style={styles.statsRow}>
+          <Stat label="DESPEGUE" value={formatMs(startMs)} />
+          <Stat label="ATERRIZAJE" value={formatMs(endMs)} />
+          <Stat label="AIRTIME" value={`${airtimeMs} ms`} />
+        </View>
+
+        <View
+          style={styles.timelineWrapper}
+          onLayout={onLayoutTrack}
+          onStartShouldSetResponder={() => true}
+          onMoveShouldSetResponder={() => true}
+          onResponderGrant={onTouchStart}
+          onResponderMove={onTouchMove}
+          onResponderRelease={onTouchEnd}
+          onResponderTerminate={onTouchEnd}>
+          <View style={[styles.track, { backgroundColor: '#333' }]} />
+          {trackWidth > 0 && (
+            <View
+              style={[
+                styles.selection,
+                {
+                  left: startX,
+                  width: Math.max(0, endX - startX),
+                  backgroundColor: colors.primary,
+                  opacity: 0.25,
+                },
+              ]}
+            />
+          )}
+          {trackWidth > 0 && (
+            <Bracket
+              x={startX}
+              color={colors.primary}
+              active={activeHandle === 'start'}
+            />
+          )}
+          {trackWidth > 0 && (
+            <Bracket
+              x={endX}
+              color={colors.primary}
+              active={activeHandle === 'end'}
+            />
+          )}
+        </View>
+
+        <View style={styles.stepRow}>
+          <StepGroup
+            label="DESPEGUE"
+            active={activeHandle === 'start'}
+            onMinus={() => stepFrame('start', -1)}
+            onPlus={() => stepFrame('start', 1)}
+            onSelect={() => setActiveHandle('start')}
+          />
+          <StepGroup
+            label="ATERRIZAJE"
+            active={activeHandle === 'end'}
+            onMinus={() => stepFrame('end', -1)}
+            onPlus={() => stepFrame('end', 1)}
+            onSelect={() => setActiveHandle('end')}
+          />
+        </View>
+
+        <View style={styles.actionsRow}>
+          <TouchableOpacity onPress={togglePlay} style={styles.playBtn}>
+            <Text fontSize="S" fontWeight="bold">
+              {isPlaying ? '❚❚  PAUSAR LOOP' : '▶  REPRODUCIR LOOP'}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={goBackToRecord} style={styles.linkBtn}>
+            <Text fontSize="S" fontWeight="bold" color="card">
+              VOLVER A GRABAR
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      <View style={styles.footer}>
+        <Button type="PRIMARY" text="CALCULAR ALTURA" onPress={goCalculate} />
+      </View>
+    </View>
+  );
+};
+
+const Stat = ({ label, value }: { label: string; value: string }) => (
+  <View style={styles.stat}>
+    <Text fontSize="XXXS" style={styles.statLabel}>
+      {label}
+    </Text>
+    <Text fontSize="S" fontWeight="bold">
+      {value}
+    </Text>
+  </View>
+);
+
+const Bracket = ({
+  x,
+  color,
+  active,
+}: {
+  x: number;
+  color: string;
+  active: boolean;
+}) => {
+  return (
+    <View
+      pointerEvents="none"
+      style={[
+        styles.bracket,
+        {
+          left: x - HANDLE_HIT / 2,
+          width: HANDLE_HIT,
+          borderColor: color,
+          backgroundColor: active ? color : 'transparent',
+          opacity: active ? 1 : 0.85,
+        },
+      ]}
+    />
+  );
+};
+
+const StepGroup = ({
+  label,
+  active,
+  onMinus,
+  onPlus,
+  onSelect,
+}: {
+  label: string;
+  active: boolean;
+  onMinus: () => void;
+  onPlus: () => void;
+  onSelect: () => void;
+}) => {
+  return (
+    <View style={styles.stepGroup}>
+      <TouchableOpacity onPress={onMinus} style={styles.stepBtn}>
+        <Text fontSize="S" fontWeight="bold">
+          −1f
+        </Text>
+      </TouchableOpacity>
+      <TouchableOpacity onPress={onSelect} style={styles.stepLabel}>
+        <Text
+          fontSize="XXXS"
+          fontWeight="bold"
+          color={active ? 'primary' : 'text'}>
+          {label}
+        </Text>
+      </TouchableOpacity>
+      <TouchableOpacity onPress={onPlus} style={styles.stepBtn}>
+        <Text fontSize="S" fontWeight="bold">
+          +1f
+        </Text>
+      </TouchableOpacity>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  screen: {
+    flex: 1,
+  },
+  videoWrapper: {
+    width: '100%',
+    backgroundColor: '#000',
+    maxHeight: '50%',
+    alignSelf: 'center',
+  },
+  body: {
+    flex: 1,
+    padding: Sizing.M,
+    gap: Sizing.M,
+  },
+  statsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: Sizing.S,
+  },
+  stat: {
+    flex: 1,
+    gap: 2,
+  },
+  statLabel: {
+    opacity: 0.6,
+    letterSpacing: 1,
+  },
+  timelineWrapper: {
+    height: TIMELINE_HEIGHT,
+    justifyContent: 'center',
+  },
+  track: {
+    height: 6,
+    borderRadius: 3,
+    width: '100%',
+  },
+  selection: {
+    position: 'absolute',
+    top: TIMELINE_HEIGHT / 2 - 3,
+    height: 6,
+    borderRadius: 3,
+  },
+  bracket: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    borderWidth: 3,
+    borderRadius: Sizing.XXS,
+  },
+  stepRow: {
+    flexDirection: 'row',
+    gap: Sizing.S,
+  },
+  stepGroup: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#1a1a1a',
+    borderRadius: Sizing.XXS,
+    padding: Sizing.XXS,
+  },
+  stepBtn: {
+    paddingHorizontal: Sizing.S,
+    paddingVertical: Sizing.XXS,
+  },
+  stepLabel: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  actionsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: Sizing.XS,
+  },
+  playBtn: {
+    paddingHorizontal: Sizing.M,
+    paddingVertical: Sizing.S,
+    borderRadius: Sizing.XXS,
+    borderWidth: 1,
+    borderColor: '#444',
+  },
+  linkBtn: {
+    paddingHorizontal: Sizing.S,
+    paddingVertical: Sizing.S,
+  },
+  footer: {
+    padding: Sizing.M,
+    paddingBottom: Sizing.L,
+  },
 });
