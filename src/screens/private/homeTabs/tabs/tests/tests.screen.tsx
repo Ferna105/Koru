@@ -1,5 +1,5 @@
 import React from 'react';
-import { Alert, View } from 'react-native';
+import { View } from 'react-native';
 
 import { Container, Text } from 'components';
 import { HomeTabScreenProps } from 'navigation/types';
@@ -7,9 +7,11 @@ import { TESTS_CATALOG, TestDefinition } from './tests.catalog';
 import { TestCard } from './components/testCard.component';
 import { styles } from './tests.styles';
 
-export const Tests = ({}: HomeTabScreenProps<'Tests'>) => {
+export const Tests = ({ navigation }: HomeTabScreenProps<'Tests'>) => {
   const handlePressTest = (test: TestDefinition) => {
-    Alert.alert(test.title, 'Próximamente.');
+    if (test.id === 'JUMP') {
+      navigation.navigate('JumpTest', { screen: 'JumpTestHistory' });
+    }
   };
 
   return (

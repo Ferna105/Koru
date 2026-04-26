@@ -5,6 +5,7 @@ import { Login } from 'screens/public/login/login.screen';
 import { AuthContext } from 'contexts/auth.context';
 import { RootStackParamList } from './types';
 import { HomeTabs } from 'screens/private/homeTabs/homeTabs.screen';
+import { JumpTestNavigator } from 'screens/private/tests/jumpTest/jumpTest.navigator';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -18,11 +19,18 @@ export const Navigator = () => {
   return (
     <Stack.Navigator>
       {authToken ? (
-        <Stack.Screen
-          name="HomeTabs"
-          component={HomeTabs}
-          options={{ headerShown: false }}
-        />
+        <>
+          <Stack.Screen
+            name="HomeTabs"
+            component={HomeTabs}
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="JumpTest"
+            component={JumpTestNavigator}
+            options={{ headerShown: false }}
+          />
+        </>
       ) : (
         <Stack.Screen
           name="Login"

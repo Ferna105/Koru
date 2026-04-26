@@ -5,9 +5,18 @@ import {
 import type { StackScreenProps } from '@react-navigation/stack';
 import type { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 
+export type JumpTestStackParamList = {
+  JumpTestHistory: undefined;
+  JumpTestExplanation: undefined;
+  JumpTestRecord: undefined;
+  JumpTestEditor: { videoUri: string; durationMs: number };
+  JumpTestResult: { videoUri: string; startMs: number; endMs: number; heightCm: number };
+};
+
 export type RootStackParamList = {
   HomeTabs: NavigatorScreenParams<HomeTabParamList>;
   Login: undefined;
+  JumpTest: NavigatorScreenParams<JumpTestStackParamList>;
 };
 
 export type RootStackScreenProps<T extends keyof RootStackParamList> =
@@ -22,6 +31,12 @@ export type HomeTabParamList = {
 export type HomeTabScreenProps<T extends keyof HomeTabParamList> =
   CompositeScreenProps<
     BottomTabScreenProps<HomeTabParamList, T>,
+    RootStackScreenProps<keyof RootStackParamList>
+  >;
+
+export type JumpTestStackScreenProps<T extends keyof JumpTestStackParamList> =
+  CompositeScreenProps<
+    StackScreenProps<JumpTestStackParamList, T>,
     RootStackScreenProps<keyof RootStackParamList>
   >;
 

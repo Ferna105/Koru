@@ -104,8 +104,8 @@ Storage key: `koru:tests:JUMP:history`. Se guardan los últimos N (ej. 50). Al b
 |---|---|---|
 | **0. Setup** | ✅ | Deps + permisos + Reanimated plugin + Kotlin 2.0 + Android disk bump |
 | **1. Tab Tests** | ✅ | Pantalla "Mis tests" + catálogo + card SALTOS con badge PROBALO |
-| **2. Stack JumpTest + History** | siguiente | Header amarillo + pantalla historial (estado vacío) |
-| **3. Explanation** | pending | Copy adaptado a "filmar pisada en primer plano" |
+| **2. Stack JumpTest + History** | ✅ | Header amarillo + pantalla historial (estado vacío) |
+| **3. Explanation** | siguiente | Copy adaptado a "filmar pisada en primer plano" |
 | **4. Record** | pending | VisionCamera + record button + timer + permisos |
 | **5. Editor** | pending | Video player + frame strip + brackets rojos + seek en drag |
 | **6. Result** | pending | Cálculo + altura + persistencia + share |
