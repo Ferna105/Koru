@@ -108,9 +108,9 @@ Storage key: `koru:tests:JUMP:history`. Se guardan los últimos N (ej. 50). Al b
 | **3. Explanation** | ✅ | Copy adaptado a "filmar pisada en primer plano" |
 | **4. Record** | ✅ | VisionCamera + permisos cám/mic + countdown + REC + switch front/back |
 | **5. Editor** | ✅ | Video + timeline + brackets draggables + step ±1f + loop + cálculo |
-| **6. Result** | siguiente | Cálculo + altura + persistencia + share |
-| **7. History poblada** | pending | Lista + best-stat card |
-| **8. Polish** | pending | Estados error/empty + animaciones + cleanup files |
+| **6. Result** | ✅ | Hero altura + auto-persist (RNFS + AsyncStorage) + share |
+| **7. History poblada** | ✅ | Best-stat card + lista cards + tap reabre Result + long-press borra |
+| **8. Polish** | ✅ | Cleanup temp + airtime mínimo + error handlers + animaciones |
 
 ## Edge cases
 
@@ -147,8 +147,60 @@ Storage key: `koru:tests:JUMP:history`. Se guardan los últimos N (ej. 50). Al b
   - `idle`: preview + ✕ (top-left, vuelve) + ↺ (top-right, switch lens) + hint "Apuntá la cámara a tu pie" + cuadro punteado centrado (60% ancho, `borderStyle: 'dashed'`) + botón REC redondo grande abajo.
   - `countdown`: 3 → 2 → 1 con texto blanco gigante (160px), shadow para legibilidad. Tap al botón cancela.
   - `recording`: badge "● REC" parpadeando (intervalo 500 ms) + botón cuadrado rojo abajo (stop manual, sin tope de tiempo).
-- `Camera.startRecording` con `fileType: 'mp4'`. En `onRecordingFinished` se prepende `file://` para Android (donde el path llega sin scheme) y se navega a `JumpTestEditor` con `videoUri` + `durationMs` (en ms).
+- `Camera.startRecording` con `fileType: 'mp4'`. En `onRecordingFinished` se prepende `file://` para Android (donde el path llega sin scheme) y se navega a `JumpTestEditor` con `videoUri` + `durationMs` (en ms) + `fps` (para step ±1f preciso).
 - Cleanup: limpia `setTimeout` y `setInterval` en unmount; `isActive` de la cámara se sincroniza con `useFocusEffect` + `AppState` para no consumir recursos cuando la pantalla no está visible.
+
+## Notas de Fase 5
+
+- `jumpTest.physics.ts` expone `airtimeToHeightCm(ms)` con `g = 9.80665 m/s²` y `h = g·T²/8`, más helper `formatMs(ms) → "MM:SS.mmm"`.
+- `JumpTestStackParamList.JumpTestEditor` ahora acepta `fps?: number` (default 30 si no llega).
+- Layout: video arriba (`aspectRatio` deducido del `naturalSize` que reporta `onLoad`, fallback 9:16, `maxHeight: 50%`). Debajo: stats row + timeline + step row + acciones + footer con CTA.
+- Stats row: `DESPEGUE` (formatMs) · `ATERRIZAJE` (formatMs) · `AIRTIME` (`${airtimeMs} ms`).
+- Timeline custom hecha sin gesture-handler: `View` con responder API (`onResponderGrant/Move/Release`). Al tocar la barra: detecta el handle más cercano (`pickClosestHandle`) y lo arrastra; pausa el playback y hace `seek` en vivo en el video. Clamp: `start ∈ [0, end−50ms]`, `end ∈ [start+50ms, durationMs]`.
+- Brackets renderizados como `View` absoluto (`borderWidth: 3`, color `primary`); el activo se rellena sólido. La selección se pinta como overlay rojo translúcido entre los brackets.
+- Step row: dos grupos `−1f / LABEL / +1f`. `1f = 1000/fps`. Tap en el LABEL marca ese handle como activo. El label activo se pinta `primary`.
+- Loop play/pause: cuando `isPlaying`, en `onProgress` (cada 50 ms) si `currentTime ≥ endMs−16ms` hace `seek(startMs/1000)`. Tocar la timeline o cambiar handle pausa el loop automáticamente.
+- "VOLVER A GRABAR" link amarillo a la derecha del play (`navigation.goBack()`).
+- CTA "CALCULAR ALTURA" → calcula `heightCm` (redondeo a 1 decimal) y navega a `JumpTestResult` con `{ videoUri, startMs, endMs, heightCm }`. Persistencia + share quedan para Fase 6.
+
+## Notas de Fase 6
+
+- Service nuevo: `src/services/tests/tests.services.ts` con `loadJumpHistory`, `saveJumpRecord`, `deleteJumpRecord`, `persistVideo`. Storage key `koru:tests:JUMP:history`, tope `JUMP_HISTORY_LIMIT = 50`.
+- `persistVideo(srcUri, id)` mueve (o copia como fallback) el MP4 desde `temp` a `${RNFS.DocumentDirectoryPath}/koru/<id>.mp4`. En Android devuelve la URI con `file://`, en iOS sin scheme. `deleteJumpRecord` también borra el archivo.
+- Auto-guardado en `JumpTestResult`: al montar, useEffect con guard `persistedRef` para que no se ejecute dos veces (StrictMode / re-renders). Genera un `id` (`Date.now().toString(36) + random`) — sin `uuid` para evitar el polyfill `react-native-get-random-values`.
+- Hero del Result: label "ALTURA DE SALTO" (M, letter-spacing 3) + número gigante (160px, line-height 170) + unit `cm` (48px) + "Airtime XXX ms" (XL).
+- Mientras guarda, se muestra `ActivityIndicator` + "Guardando en historial…" en S/bold.
+- Acciones footer: `Button PRIMARY "COMPARTIR"` y `Button TERTIARY "VER HISTORIAL"`.
+- Share: `react-native-share` con `{ url, type: 'video/mp4', message }`. Mensaje: "Salté X.X cm con Koru (airtime XXX ms)". `failOnCancel: false` para que cancelar no tire error.
+- "VER HISTORIAL" hace `navigation.popToTop()` (vuelve a `JumpTestHistory`, primera screen del stack).
+
+## Notas de Fase 7
+
+- `JumpTestHistory` carga la lista con `useFocusEffect` + `testsService.loadJumpHistory()`. Mientras `records === null` renderiza una pantalla negra (sin spinner pesado, la carga es local).
+- `JumpTestStackParamList.JumpTestResult` extendido con `recordId?: string`. Si llega, el Result salta el auto-persist (`alreadyPersisted = true`) y no muestra el spinner "Guardando…". Esto permite reabrir registros del historial sin duplicarlos.
+- Best-stat: card con fondo `colors.card` arriba de la lista mostrando la mayor altura (`reduce` por `heightCm`) + fecha relativa + airtime. Solo se renderiza cuando hay al menos 1 record.
+- Item card: row horizontal con borde izquierdo amarillo (`borderLeftWidth: 4`, `borderLeftColor: colors.card`), altura prominente a la izq (`fontSize: 36`), fecha + airtime a la derecha alineados a `flex-end`.
+- Fechas formateadas con helper local `formatRelative(iso)`: "hoy HH:mm", "ayer HH:mm", "DD/MM HH:mm". Sin libs externas.
+- `onLongPress` con `delayLongPress: 350` ms abre `Alert` nativo "Borrar este test" / "Cancelar" / "Borrar" (estilo `destructive`). El service borra el archivo MP4 + entrada y se recarga la lista.
+- Pull-to-refresh disponible aunque la fuente sea local — útil cuando se borra y se quiere reintentar.
+- Botón fijo abajo "NUEVO SALTO" (`position: 'absolute'`) que navega a `JumpTestExplanation`. Cuando la lista está vacía, sólo se muestra el empty state con CTA "EMPEZAR".
+
+## Notas de Fase 8
+
+- Service: nuevo método `deleteVideoAt(uri)` en `tests.services.ts` para borrar archivos por URI con guard de `exists()` y try/catch silencioso.
+- Cleanup en `JumpTestEditor`: flag `consumedRef` se setea a `true` cuando se navega al Result. `navigation.addListener('beforeRemove', …)` borra el MP4 temporal si `consumedRef === false` (cubre tanto "VOLVER A GRABAR" como gesto/back del header). Si se calculó altura, no se borra (la persistencia lo mueve).
+- Validación: `MIN_AIRTIME_MS = 50` (ya usado para clamp de los brackets). En `goCalculate`, si el airtime queda por debajo, se muestra `Alert.alert('Rango muy corto', …)` y no se navega.
+- Errores de video en Editor: `<Video onError={…} />` muestra `Alert` con copy en español + `goBack()` en el OK. Cubre archivos corruptos o borrados.
+- Errores de grabación en Record: `onRecordingError`, `startRecording` catch y `stopRecording` catch ahora muestran `Alert` además del `console.warn`. Estado vuelve a `idle` para que el usuario pueda reintentar.
+- Animaciones (Reanimated 3.6.3, ya en deps de Fase 0):
+  - Countdown: por cada cambio de `countdownValue`, `scale: 1.6 → 1` (350 ms) y `opacity: 0 → 1` (220 ms). El componente pasa a `Animated.View`.
+  - REC blink: opacity animada con `withRepeat(withTiming(0.25, 500), -1, true)` (reemplazó al `setInterval` anterior). Cancel en unmount y al salir de `recording`.
+  - Hero del Result: `opacity: 0 → 1` (420 ms) + `scale: 0.92 → 1` (380 ms con `withDelay(60)`).
+- Forced portrait, permisos, 60 fps y empty/denied screens ya estaban resueltos en Fases 4 y 7.
+
+## Estado final
+
+Todas las fases del plan están ✅. La feature "Test de Salto" cubre el flow completo: Tab Tests → Historial → Explicación → Grabación → Editor → Resultado, con persistencia local de records + share + manejo de errores y polish visual. Próximas mejoras posibles (no incluidas en este plan): tira de thumbnails reales en el Editor, tests adicionales en `tests.catalog.ts`, sincronización con backend.
 
 ## Notas de Fase 0 (post-instalación)
 

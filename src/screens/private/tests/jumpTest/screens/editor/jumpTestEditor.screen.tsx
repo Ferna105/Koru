@@ -5,6 +5,7 @@ import {
   TouchableOpacity,
   LayoutChangeEvent,
   GestureResponderEvent,
+  Alert,
 } from 'react-native';
 import Video, { VideoRef, OnLoadData, OnProgressData } from 'react-native-video';
 import { useTheme } from '@react-navigation/native';
@@ -12,6 +13,7 @@ import { Button, Text } from 'components';
 import { JumpTestStackScreenProps } from 'navigation/types';
 import { Sizing } from 'utils/sizing';
 import { airtimeToHeightCm, formatMs } from '../../jumpTest.physics';
+import { testsService } from 'services/tests/tests.services';
 
 type Handle = 'start' | 'end';
 
@@ -39,6 +41,7 @@ export const JumpTestEditor = ({
   } | null>(null);
 
   const draggingRef = useRef<Handle | null>(null);
+  const consumedRef = useRef(false);
   const frameMs = 1000 / Math.max(1, fps);
 
   useEffect(() => {
@@ -46,6 +49,14 @@ export const JumpTestEditor = ({
       setEndMs(durationMs);
     }
   }, [durationMs, endMs]);
+
+  useEffect(() => {
+    const unsub = navigation.addListener('beforeRemove', () => {
+      if (consumedRef.current) return;
+      testsService.deleteVideoAt(videoUri).catch(() => {});
+    });
+    return unsub;
+  }, [navigation, videoUri]);
 
   const onLoad = (data: OnLoadData) => {
     const ms = Math.round((data.duration ?? 0) * 1000);
@@ -150,7 +161,15 @@ export const JumpTestEditor = ({
 
   const goCalculate = () => {
     const airtimeMs = Math.max(0, endMs - startMs);
+    if (airtimeMs < MIN_AIRTIME_MS) {
+      Alert.alert(
+        'Rango muy corto',
+        'El tiempo entre despegue y aterrizaje es muy corto para calcular la altura. Movés los brackets para ampliarlo.',
+      );
+      return;
+    }
     const heightCm = Math.round(airtimeToHeightCm(airtimeMs) * 10) / 10;
+    consumedRef.current = true;
     navigation.navigate('JumpTestResult', {
       videoUri,
       startMs,
@@ -161,6 +180,14 @@ export const JumpTestEditor = ({
 
   const goBackToRecord = () => {
     navigation.goBack();
+  };
+
+  const onVideoError = () => {
+    Alert.alert(
+      'No se pudo abrir el video',
+      'Hubo un problema cargando el archivo grabado. Probá de nuevo.',
+      [{ text: 'OK', onPress: () => navigation.goBack() }],
+    );
   };
 
   const airtimeMs = Math.max(0, endMs - startMs);
@@ -186,6 +213,7 @@ export const JumpTestEditor = ({
           resizeMode="contain"
           onLoad={onLoad}
           onProgress={onProgress}
+          onError={onVideoError}
           progressUpdateInterval={50}
           muted
         />

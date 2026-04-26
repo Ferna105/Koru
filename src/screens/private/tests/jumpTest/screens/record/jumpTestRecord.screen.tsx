@@ -1,4 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  withRepeat,
+  cancelAnimation,
+} from 'react-native-reanimated';
 import {
   View,
   StyleSheet,
@@ -7,6 +14,7 @@ import {
   Platform,
   AppState,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import {
   Camera,
@@ -36,13 +44,21 @@ export const JumpTestRecord = ({
   const [position, setPosition] = useState<CameraPosition>('back');
   const [mode, setMode] = useState<Mode>('idle');
   const [countdownValue, setCountdownValue] = useState(3);
-  const [recBlink, setRecBlink] = useState(true);
   const [isActive, setIsActive] = useState(true);
 
   const cameraRef = useRef<Camera>(null);
   const recordingStartRef = useRef<number>(0);
   const countdownTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const blinkTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const recOpacity = useSharedValue(1);
+  const countdownScale = useSharedValue(1);
+  const countdownOpacity = useSharedValue(1);
+
+  const recAnimatedStyle = useAnimatedStyle(() => ({ opacity: recOpacity.value }));
+  const countdownAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: countdownOpacity.value,
+    transform: [{ scale: countdownScale.value }],
+  }));
 
   const device = useCameraDevice(position);
   const format = useCameraFormat(device, [
@@ -88,31 +104,33 @@ export const JumpTestRecord = ({
       if (countdownTimerRef.current) {
         clearTimeout(countdownTimerRef.current);
       }
-      if (blinkTimerRef.current) {
-        clearInterval(blinkTimerRef.current);
-      }
+      cancelAnimation(recOpacity);
+      cancelAnimation(countdownScale);
+      cancelAnimation(countdownOpacity);
     };
-  }, []);
+  }, [recOpacity, countdownScale, countdownOpacity]);
 
   useEffect(() => {
     if (mode !== 'recording') {
-      if (blinkTimerRef.current) {
-        clearInterval(blinkTimerRef.current);
-        blinkTimerRef.current = null;
-      }
-      setRecBlink(true);
+      cancelAnimation(recOpacity);
+      recOpacity.value = 1;
       return;
     }
-    blinkTimerRef.current = setInterval(() => {
-      setRecBlink(prev => !prev);
-    }, 500);
-    return () => {
-      if (blinkTimerRef.current) {
-        clearInterval(blinkTimerRef.current);
-        blinkTimerRef.current = null;
-      }
-    };
-  }, [mode]);
+    recOpacity.value = 1;
+    recOpacity.value = withRepeat(
+      withTiming(0.25, { duration: 500 }),
+      -1,
+      true,
+    );
+  }, [mode, recOpacity]);
+
+  useEffect(() => {
+    if (mode !== 'countdown') return;
+    countdownScale.value = 1.6;
+    countdownOpacity.value = 0;
+    countdownScale.value = withTiming(1, { duration: 350 });
+    countdownOpacity.value = withTiming(1, { duration: 220 });
+  }, [mode, countdownValue, countdownScale, countdownOpacity]);
 
   const startCountdown = () => {
     if (mode !== 'idle') return;
@@ -159,11 +177,19 @@ export const JumpTestRecord = ({
         onRecordingError: error => {
           console.warn('Recording error:', error);
           setMode('idle');
+          Alert.alert(
+            'No se pudo grabar',
+            'Hubo un problema con la cámara durante la grabación. Probá de nuevo.',
+          );
         },
       });
     } catch (e) {
       console.warn('startRecording failed:', e);
       setMode('idle');
+      Alert.alert(
+        'No se pudo iniciar',
+        'No pudimos iniciar la grabación. Verificá que la cámara esté disponible.',
+      );
     }
   };
 
@@ -174,6 +200,10 @@ export const JumpTestRecord = ({
     } catch (e) {
       console.warn('stopRecording failed:', e);
       setMode('idle');
+      Alert.alert(
+        'No se pudo guardar',
+        'Hubo un problema al cerrar la grabación.',
+      );
     }
   };
 
@@ -301,21 +331,23 @@ export const JumpTestRecord = ({
         </TouchableOpacity>
       )}
 
-      {isRecording && recBlink && (
-        <View style={styles.recBadge}>
+      {isRecording && (
+        <Animated.View style={[styles.recBadge, recAnimatedStyle]}>
           <View style={[styles.recDot, { backgroundColor: colors.primary }]} />
           <Text fontSize="S" fontWeight="bold">
             REC
           </Text>
-        </View>
+        </Animated.View>
       )}
 
       {isCountdown && (
-        <View pointerEvents="none" style={styles.countdownWrapper}>
+        <Animated.View
+          pointerEvents="none"
+          style={[styles.countdownWrapper, countdownAnimatedStyle]}>
           <Text style={styles.countdownText} fontWeight="bold">
             {countdownValue}
           </Text>
-        </View>
+        </Animated.View>
       )}
 
       <View style={styles.bottomBar}>

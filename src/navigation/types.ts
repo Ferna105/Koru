@@ -10,7 +10,13 @@ export type JumpTestStackParamList = {
   JumpTestExplanation: undefined;
   JumpTestRecord: undefined;
   JumpTestEditor: { videoUri: string; durationMs: number; fps?: number };
-  JumpTestResult: { videoUri: string; startMs: number; endMs: number; heightCm: number };
+  JumpTestResult: {
+    videoUri: string;
+    startMs: number;
+    endMs: number;
+    heightCm: number;
+    recordId?: string;
+  };
 };
 
 export type RootStackParamList = {
