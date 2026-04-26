@@ -5,10 +5,6 @@ const API_V1 = {
     authenticate: API_URL + '/api/v1/auth/authenticate',
     refreshToken: API_URL + '/api/v1/auth/refreshToken',
   },
-  matches: {
-    create: API_URL + '/api/v1/matches',
-    search: API_URL + '/api/v1/matches/search',
-  },
 };
 
 export const services = { API_V1 };

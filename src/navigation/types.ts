@@ -15,7 +15,6 @@ export type RootStackScreenProps<T extends keyof RootStackParamList> =
 
 export type HomeTabParamList = {
   Home: undefined;
-  MatchTabs: undefined;
   Profile: undefined;
 };
 
@@ -24,18 +23,6 @@ export type HomeTabScreenProps<T extends keyof HomeTabParamList> =
     BottomTabScreenProps<HomeTabParamList, T>,
     RootStackScreenProps<keyof RootStackParamList>
   >;
-
-export type HomeTabMatchTabParamList = {
-  SearchMatch: undefined;
-  CreateMatch: undefined;
-};
-
-export type HomeTabSearchTabScreenProps<
-  T extends keyof HomeTabMatchTabParamList,
-> = CompositeScreenProps<
-  BottomTabScreenProps<HomeTabMatchTabParamList, T>,
-  BottomTabScreenProps<HomeTabParamList>
->;
 
 declare global {
   namespace ReactNavigation {
