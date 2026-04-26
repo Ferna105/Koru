@@ -32,6 +32,12 @@
 		<key>NSAllowsLocalNetworking</key>
 		<true/>
 	</dict>
+	<key>NSCameraUsageDescription</key>
+	<string>Koru necesita acceder a la cámara para grabar tus tests físicos.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>El audio se graba junto al video del test.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Koru puede guardar el video de tu test en la galería.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string></string>
 	<key>UILaunchStoryboardName</key>

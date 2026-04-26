@@ -1,5 +1,7 @@
+import 'react-native-gesture-handler';
 import React from 'react';
 import { useColorScheme } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { AuthProvider } from './src/contexts/auth.context';
 import { ServiceProvider } from './src/contexts/service.context';
 import { Navigator } from './src/navigation';
@@ -33,13 +35,15 @@ function App() {
   };
 
   return (
-    <NavigationContainer theme={scheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <AuthProvider>
-        <ServiceProvider>
-          <Navigator />
-        </ServiceProvider>
-      </AuthProvider>
-    </NavigationContainer>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <NavigationContainer theme={scheme === 'dark' ? DarkTheme : DefaultTheme}>
+        <AuthProvider>
+          <ServiceProvider>
+            <Navigator />
+          </ServiceProvider>
+        </AuthProvider>
+      </NavigationContainer>
+    </GestureHandlerRootView>
   );
 }
 
