@@ -10,7 +10,7 @@ import { JumpTestResult } from './screens/result/jumpTestResult.screen';
 
 const Stack = createNativeStackNavigator<JumpTestStackParamList>();
 
-export const JumpTestNavigator = ({}: RootStackScreenProps<'JumpTest'>) => {
+export const JumpTestNavigator = ({ }: RootStackScreenProps<'JumpTest'>) => {
   const { colors } = useTheme();
 
   return (
@@ -22,6 +22,7 @@ export const JumpTestNavigator = ({}: RootStackScreenProps<'JumpTest'>) => {
         headerBackTitle: '',
         orientation: 'portrait',
         headerShown: false,
+        animation: 'slide_from_right',
       }}>
       <Stack.Screen
         name="JumpTestHistory"
