@@ -15,7 +15,7 @@ import Video, {
 import { Button, Icon, Text } from 'components';
 import { tokens, useTheme } from 'design-system';
 import { JumpTestStackScreenProps } from 'navigation/types';
-import { airtimeToHeightCm, formatMs } from '../../jumpTest.physics';
+import { airtimeToHeightCm, formatAirtimeMs, formatMs } from '../../jumpTest.physics';
 import { testsService } from 'services/tests/tests.services';
 
 type Handle = 'start' | 'end';
@@ -238,7 +238,7 @@ export const JumpTestEditor = ({
         <View style={styles.statsRow}>
           <Stat label="DESPEGUE" value={formatMs(startMs)} />
           <Stat label="ATERRIZAJE" value={formatMs(endMs)} />
-          <Stat label="AIRTIME" value={`${airtimeMs} ms`} />
+          <Stat label="AIRTIME" value={`${formatAirtimeMs(airtimeMs)} ms`} />
         </View>
 
         <View

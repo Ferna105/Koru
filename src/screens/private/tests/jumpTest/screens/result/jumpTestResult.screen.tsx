@@ -10,6 +10,7 @@ import Animated, {
 import { Button, Container, Text } from 'components';
 import { tokens, useTheme } from 'design-system';
 import { JumpTestStackScreenProps } from 'navigation/types';
+import { formatAirtimeMs } from '../../jumpTest.physics';
 import { JumpRecord } from '../../jumpTest.types';
 import { testsService } from 'services/tests/tests.services';
 
@@ -96,7 +97,7 @@ export const JumpTestResult = ({
     const uri = record?.videoUri ?? videoUri;
     const message = `Salté ${heightCm.toFixed(
       1,
-    )} cm con Koru (airtime ${airtimeMs} ms)`;
+    )} cm con Koru (airtime ${formatAirtimeMs(airtimeMs)} ms)`;
     try {
       await Share.open({
         url: uri,
@@ -135,7 +136,7 @@ export const JumpTestResult = ({
           </Text>
         </View>
         <Text variant="monoLG" tone="secondary">
-          Airtime {airtimeMs} ms
+          Airtime {formatAirtimeMs(airtimeMs)} ms
         </Text>
       </Animated.View>
 

@@ -9,6 +9,8 @@ export const airtimeToHeightCm = (airtimeMs: number): number => {
   return heightM * 100;
 };
 
+export const formatAirtimeMs = (ms: number): string => ms.toFixed(3);
+
 export const formatMs = (ms: number): string => {
   if (!Number.isFinite(ms) || ms < 0) {
     return '00:00.000';

@@ -20,6 +20,7 @@ import {
 } from 'components';
 import { useTheme, tokens } from 'design-system';
 import { JumpTestStackScreenProps } from 'navigation/types';
+import { formatAirtimeMs } from '../../jumpTest.physics';
 import { JumpRecord } from '../../jumpTest.types';
 import { testsService } from 'services/tests/tests.services';
 
@@ -66,7 +67,7 @@ const BestCard = ({ record }: { record: JumpRecord }) => (
       </Text>
     </View>
     <Text variant="monoMD" tone="secondary">
-      {formatRelative(record.createdAt)} · {record.airtimeMs} ms
+      {formatRelative(record.createdAt)} · {formatAirtimeMs(record.airtimeMs)} ms
     </Text>
   </Card>
 );
@@ -192,9 +193,7 @@ export const JumpTestHistory = ({
               <Icon name="Timer" size="L" color={t.color.brand.primary} />
             }
             title={`${item.heightCm.toFixed(1)} cm`}
-            subtitle={`${formatRelative(item.createdAt)} · airtime ${
-              item.airtimeMs
-            } ms`}
+            subtitle={`${formatRelative(item.createdAt)} · airtime ${formatAirtimeMs(item.airtimeMs)} ms`}
             trailing={
               <Icon
                 name="ChevronRight"
