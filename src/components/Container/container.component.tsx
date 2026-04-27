@@ -1,53 +1,60 @@
-import React from 'react';
+import React, { ReactNode } from 'react';
 import {
-  ImageBackground,
   SafeAreaView,
   ScrollView,
-  StyleSheet,
+  StyleProp,
   View,
+  ViewStyle,
 } from 'react-native';
-
-import { ReactElement } from 'react';
-import { StyleProp, ViewStyle } from 'react-native';
+import { useTheme } from 'design-system';
+import { Tokens } from 'design-system';
 import { styles } from './container.styles';
-import { useTheme } from '@react-navigation/native';
+
+type ContainerVariant = keyof Tokens['color']['bg'];
 
 interface ContainerProps {
-  children: ReactElement | ReactElement[];
+  children: ReactNode;
   style?: StyleProp<ViewStyle>;
   scrollable?: boolean;
+  /** Background surface variant. `base` is the default app canvas. */
+  variant?: ContainerVariant;
+  /** Drop the screen padding for full-bleed layouts (e.g. camera). */
+  noPadding?: boolean;
 }
 
-interface ContentProps {
-  children: ReactElement | ReactElement[];
+const Content = ({
+  children,
+  scrollable,
+}: {
+  children: ReactNode;
   scrollable: boolean;
-}
-
-const Content = ({ children, scrollable }: ContentProps) => {
-  if (scrollable) {
-    return <ScrollView nestedScrollEnabled>{children}</ScrollView>;
-  } else {
-    return <>{children}</>;
-  }
-};
+}) =>
+  scrollable ? (
+    <ScrollView nestedScrollEnabled>{children}</ScrollView>
+  ) : (
+    <>{children}</>
+  );
 
 export const Container = ({
   children,
   style,
   scrollable = false,
+  variant = 'base',
+  noPadding = false,
 }: ContainerProps) => {
-  const { colors } = useTheme();
+  const tokens = useTheme();
+  const bg = tokens.color.bg[variant];
 
   return (
-    <SafeAreaView
-      style={[styles.safeArea, { backgroundColor: colors.background }]}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: bg }]}>
       <Content scrollable={scrollable}>
-        <ImageBackground
-          source={require('./container.png')}
-          resizeMode="contain"
-          style={StyleSheet.absoluteFill}
-        />
-        <View style={[style, styles.container]}>{children}</View>
+        <View
+          style={[
+            { flex: 1, padding: noPadding ? 0 : tokens.layout.screenPadding },
+            style,
+          ]}>
+          {children}
+        </View>
       </Content>
     </SafeAreaView>
   );

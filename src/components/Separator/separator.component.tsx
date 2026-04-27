@@ -1,8 +1,20 @@
 import React from 'react';
 import { View } from 'react-native';
-import { useStyles } from './separator.styles';
+import { useTheme, ColorBorder } from 'design-system';
+import { styles } from './separator.styles';
 
-export const Separator = () => {
-  const { styles } = useStyles();
-  return <View style={styles.separator} />;
+interface SeparatorProps {
+  tone?: ColorBorder;
+}
+
+export const Separator = ({ tone = 'subtle' }: SeparatorProps) => {
+  const tokens = useTheme();
+  return (
+    <View
+      style={[
+        styles.separator,
+        { borderBottomColor: tokens.color.border[tone] },
+      ]}
+    />
+  );
 };

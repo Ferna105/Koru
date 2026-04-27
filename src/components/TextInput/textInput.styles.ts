@@ -1,26 +1,47 @@
-import { useTheme } from '@react-navigation/native';
 import { StyleSheet } from 'react-native';
-import { Sizing } from 'utils/sizing';
+import { tokens } from 'design-system';
 
 export const useStyles = () => {
-  const { colors } = useTheme();
-
   const styles = StyleSheet.create({
     container: {
       width: '100%',
     },
-    textInputContainer: {
+    label: {
+      marginBottom: tokens.spacing.xs,
+    },
+    control: {
       flexDirection: 'row',
-      width: '100%',
+      alignItems: 'center',
+      gap: tokens.spacing.sm,
+      backgroundColor: tokens.color.bg.surface,
+      borderRadius: tokens.radius.md,
+      borderWidth: 1,
+      borderColor: tokens.color.border.default,
+      paddingHorizontal: tokens.spacing.md,
+      minHeight: 48,
     },
-    textInput: {
-      color: colors.text,
-      backgroundColor: colors.card,
-      padding: Sizing.S,
+    controlFocus: {
+      borderColor: tokens.color.border.focus,
+    },
+    controlError: {
+      borderColor: tokens.color.brand.danger,
+    },
+    controlDisabled: {
+      opacity: tokens.opacity.disabled,
+    },
+    input: {
       flex: 1,
+      color: tokens.color.text.primary,
+      fontSize: tokens.type.bodyMD.fontSize,
+      lineHeight: tokens.type.bodyMD.lineHeight,
+      fontFamily: 'Manrope-Regular',
+      paddingVertical: tokens.spacing.md,
     },
-    labelContainer: {
-      marginBottom: Sizing.XXXS,
+    inputMono: {
+      fontFamily: 'JetBrainsMono-Medium',
+    },
+    hint: {
+      marginTop: tokens.spacing.xs,
     },
   });
 

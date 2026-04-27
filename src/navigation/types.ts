@@ -23,6 +23,7 @@ export type RootStackParamList = {
   HomeTabs: NavigatorScreenParams<HomeTabParamList>;
   Login: undefined;
   JumpTest: NavigatorScreenParams<JumpTestStackParamList>;
+  DesignSystem: undefined;
 };
 
 export type RootStackScreenProps<T extends keyof RootStackParamList> =

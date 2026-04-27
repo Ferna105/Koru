@@ -1,7 +1,10 @@
 import { StyleSheet } from 'react-native';
-import { Sizing } from 'utils/sizing';
+import { tokens } from 'design-system';
 
 export const styles = StyleSheet.create({
   safeArea: { flex: 1 },
-  container: { padding: Sizing.XXL, flex: 1 },
+  container: {
+    padding: tokens.layout.screenPadding,
+    flex: 1,
+  },
 });
