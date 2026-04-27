@@ -21,6 +21,7 @@ export const JumpTestNavigator = ({}: RootStackScreenProps<'JumpTest'>) => {
         headerTitleStyle: { fontWeight: 'bold' },
         headerBackTitle: '',
         orientation: 'portrait',
+        headerShown: false,
       }}>
       <Stack.Screen
         name="JumpTestHistory"
@@ -35,7 +36,7 @@ export const JumpTestNavigator = ({}: RootStackScreenProps<'JumpTest'>) => {
       <Stack.Screen
         name="JumpTestRecord"
         component={JumpTestRecord}
-        options={{ headerShown: false }}
+        options={{ title: 'SALTOS' }}
       />
       <Stack.Screen
         name="JumpTestEditor"

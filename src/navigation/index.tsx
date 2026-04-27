@@ -26,7 +26,7 @@ export const Navigator = () => {
   }
 
   return (
-    <Stack.Navigator>
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
       {authToken ? (
         <>
           <Stack.Screen

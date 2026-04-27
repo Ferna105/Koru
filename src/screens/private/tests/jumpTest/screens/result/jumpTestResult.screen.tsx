@@ -29,15 +29,15 @@ export const JumpTestResult = ({
   const [record, setRecord] = useState<JumpRecord | null>(
     alreadyPersisted
       ? {
-          id: recordId!,
-          testId: 'JUMP',
-          createdAt: new Date(0).toISOString(),
-          videoUri,
-          startMs,
-          endMs,
-          airtimeMs,
-          heightCm,
-        }
+        id: recordId!,
+        testId: 'JUMP',
+        createdAt: new Date(0).toISOString(),
+        videoUri,
+        startMs,
+        endMs,
+        airtimeMs,
+        heightCm,
+      }
       : null,
   );
   const persistedRef = useRef(false);
@@ -117,13 +117,13 @@ export const JumpTestResult = ({
   const heightDec = Math.round((heightCm - heightInt) * 10);
 
   return (
-    <Container variant="base" noPadding>
+    <Container variant="base">
       <Animated.View style={[styles.hero, heroAnimatedStyle]}>
         <Text variant="overline" tone="brand">
           Altura de salto
         </Text>
         <View style={styles.heroNumberWrapper}>
-          <Text variant="displayXL" family="display" style={styles.heroNumber}>
+          <Text variant="displayXL" family="display" style={styles.heroNumber} adjustsFontSizeToFit numberOfLines={1}>
             {heightInt}.{heightDec}
           </Text>
           <Text
@@ -174,6 +174,7 @@ const styles = StyleSheet.create({
   },
   heroNumber: {
     fontSize: 144,
+    flex: 1,
     lineHeight: 156,
   },
   heroUnit: {
@@ -188,8 +189,7 @@ const styles = StyleSheet.create({
     paddingBottom: tokens.spacing.sm,
   },
   footer: {
-    padding: tokens.layout.screenPadding,
-    paddingBottom: tokens.spacing['2xl'],
+    paddingBottom: tokens.spacing['xs'],
     gap: tokens.spacing.sm,
   },
 });
