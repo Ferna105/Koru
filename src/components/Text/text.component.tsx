@@ -1,18 +1,13 @@
 import React from 'react';
-import { useTheme as useNavTheme } from '@react-navigation/native';
 import {
   Text as TextBase,
   TextProps as TextDefaultProps,
   TextStyle,
 } from 'react-native';
-import { Sizing } from 'utils/sizing';
-import { ITheme } from 'utils/colors';
 import { useTheme } from 'design-system';
 import { TextProps, TextTone } from './text.interfaces';
 
 const FAMILY_FOR_WEIGHT = (weight: TextStyle['fontWeight']): string => {
-  // Pick the right Manrope cut for body weights so the rendered glyphs
-  // actually match the token (RN doesn't synthesize bold otherwise).
   switch (weight) {
     case '700':
     case 'bold':
@@ -27,7 +22,6 @@ const FAMILY_FOR_WEIGHT = (weight: TextStyle['fontWeight']): string => {
 };
 
 const FAMILY_FOR_DISPLAY = (weight: TextStyle['fontWeight']): string => {
-  // Archivo: Bold (700), ExtraBold (800), Black (900).
   switch (weight) {
     case '700':
     case 'bold':
@@ -71,58 +65,34 @@ const resolveTone = (
 
 export const Text = ({
   style,
-  variant,
-  tone,
+  variant = 'bodyMD',
+  tone = 'primary',
   family,
-  fontSize,
-  fontWeight,
-  color,
   ...props
 }: TextDefaultProps & TextProps) => {
   const tokens = useTheme();
-  const { colors }: ITheme = useNavTheme();
-
-  // Token-driven path (preferred). Renders even if all legacy props are unset.
-  if (variant || tone || family) {
-    const v = tokens.type[variant ?? 'bodyMD'];
-    const fam = family ?? (v.family as 'display' | 'body' | 'mono');
-    const tn = tone ?? 'primary';
-    return (
-      <TextBase
-        {...props}
-        style={[
-          {
-            fontSize: v.fontSize,
-            lineHeight: v.lineHeight,
-            letterSpacing: v.letterSpacing,
-            fontWeight: v.fontWeight as TextStyle['fontWeight'],
-            fontFamily: resolveFamily(
-              fam,
-              v.fontWeight as TextStyle['fontWeight'],
-            ),
-            color: resolveTone(tn, tokens),
-            textTransform:
-              'textTransform' in v
-                ? (v.textTransform as TextStyle['textTransform'])
-                : undefined,
-          },
-          style,
-        ]}
-      />
-    );
-  }
-
-  // Legacy path — preserves prior behaviour for un-migrated screens.
+  const v = tokens.type[variant];
+  const fam = family ?? (v.family as 'display' | 'body' | 'mono');
   return (
     <TextBase
       {...props}
       style={[
-        style,
         {
-          color: colors[color ?? 'text'],
-          fontSize: Sizing[fontSize ?? 'M'],
-          fontWeight: fontWeight ?? 'normal',
+          fontSize: v.fontSize,
+          lineHeight: v.lineHeight,
+          letterSpacing: v.letterSpacing,
+          fontWeight: v.fontWeight as TextStyle['fontWeight'],
+          fontFamily: resolveFamily(
+            fam,
+            v.fontWeight as TextStyle['fontWeight'],
+          ),
+          color: resolveTone(tone, tokens),
+          textTransform:
+            'textTransform' in v
+              ? (v.textTransform as TextStyle['textTransform'])
+              : undefined,
         },
+        style,
       ]}
     />
   );

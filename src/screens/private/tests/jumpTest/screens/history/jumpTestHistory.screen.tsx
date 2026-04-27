@@ -3,15 +3,23 @@ import {
   View,
   StyleSheet,
   FlatList,
-  TouchableOpacity,
   Alert,
   RefreshControl,
+  Pressable,
 } from 'react-native';
-import { useFocusEffect, useTheme } from '@react-navigation/native';
-import { Button, Text } from 'components';
+import { useFocusEffect } from '@react-navigation/native';
+import {
+  Button,
+  Card,
+  Container,
+  Empty,
+  Icon,
+  ListItem,
+  Text,
+  TopBar,
+} from 'components';
+import { useTheme, tokens } from 'design-system';
 import { JumpTestStackScreenProps } from 'navigation/types';
-import { Sizing } from 'utils/sizing';
-import { ITheme } from 'utils/colors';
 import { JumpRecord } from '../../jumpTest.types';
 import { testsService } from 'services/tests/tests.services';
 
@@ -31,17 +39,42 @@ const formatRelative = (iso: string): string => {
 
   const hh = String(d.getHours()).padStart(2, '0');
   const mm = String(d.getMinutes()).padStart(2, '0');
-  if (sameDay) return `hoy ${hh}:${mm}`;
-  if (isYesterday) return `ayer ${hh}:${mm}`;
+  if (sameDay) {
+    return `hoy ${hh}:${mm}`;
+  }
+  if (isYesterday) {
+    return `ayer ${hh}:${mm}`;
+  }
   const dd = String(d.getDate()).padStart(2, '0');
   const mo = String(d.getMonth() + 1).padStart(2, '0');
   return `${dd}/${mo} ${hh}:${mm}`;
 };
 
+const ItemSeparator = () => <View style={styles.separatorGap} />;
+
+const BestCard = ({ record }: { record: JumpRecord }) => (
+  <Card variant="elevated" style={styles.bestCard}>
+    <Text variant="overline" tone="brand">
+      Récord personal
+    </Text>
+    <View style={styles.bestRow}>
+      <Text variant="displayXL" tone="brand" family="display">
+        {record.heightCm.toFixed(1)}
+      </Text>
+      <Text variant="headingMD" tone="secondary" style={styles.bestUnit}>
+        cm
+      </Text>
+    </View>
+    <Text variant="monoMD" tone="secondary">
+      {formatRelative(record.createdAt)} · {record.airtimeMs} ms
+    </Text>
+  </Card>
+);
+
 export const JumpTestHistory = ({
   navigation,
 }: JumpTestStackScreenProps<'JumpTestHistory'>) => {
-  const { colors }: ITheme = useTheme();
+  const t = useTheme();
   const [records, setRecords] = useState<JumpRecord[] | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -78,7 +111,9 @@ export const JumpTestHistory = ({
   const onItemLongPress = (record: JumpRecord) => {
     Alert.alert(
       'Borrar este test',
-      `¿Querés borrar el salto de ${record.heightCm.toFixed(1)} cm? Esta acción no se puede deshacer.`,
+      `¿Querés borrar el salto de ${record.heightCm.toFixed(
+        1,
+      )} cm? Esta acción no se puede deshacer.`,
       [
         { text: 'Cancelar', style: 'cancel' },
         {
@@ -94,35 +129,50 @@ export const JumpTestHistory = ({
   };
 
   const goExplanation = () => navigation.navigate('JumpTestExplanation');
+  const goBack = () => navigation.goBack();
+
+  const backButton = (
+    <Pressable hitSlop={t.layout.minHitSlop} onPress={goBack}>
+      <Icon name="ChevronLeft" size="L" />
+    </Pressable>
+  );
 
   if (records === null) {
     return (
-      <View
-        style={[styles.screen, styles.center, { backgroundColor: colors.background }]}
-      />
+      <Container variant="base" noPadding>
+        <TopBar title="Historial" leading={backButton} />
+      </Container>
     );
   }
 
   if (records.length === 0) {
     return (
-      <View style={[styles.screen, { backgroundColor: colors.background }]}>
-        <View style={styles.empty}>
-          <Text fontSize="XL" fontWeight="bold" style={styles.centerText}>
-            {'Aún no hiciste\nningún salto'}
-          </Text>
-          <Text fontSize="S" style={[styles.centerText, styles.subtitle]}>
-            Filmá tu pisada en primer plano y medí tu altura de salto
-          </Text>
-          <Button type="PRIMARY" text="EMPEZAR" onPress={goExplanation} />
-        </View>
-      </View>
+      <Container variant="base" noPadding>
+        <TopBar title="Historial" leading={backButton} />
+        <Empty
+          icon={
+            <Icon name="Dumbbell" size="XXXL" color={t.color.brand.primary} />
+          }
+          title="Aún no hay tests"
+          body="Hacé tu primer salto para empezar a medirte."
+          action={
+            <Button variant="primary" onPress={goExplanation}>
+              Nuevo salto
+            </Button>
+          }
+        />
+      </Container>
     );
   }
 
-  const best = records.reduce((acc, r) => (r.heightCm > acc.heightCm ? r : acc), records[0]);
+  const best = records.reduce(
+    (acc, r) => (r.heightCm > acc.heightCm ? r : acc),
+    records[0],
+  );
 
   return (
-    <View style={[styles.screen, { backgroundColor: colors.background }]}>
+    <Container variant="base" noPadding>
+      <TopBar title="Historial" leading={backButton} />
       <FlatList
         data={records}
         keyExtractor={item => item.id}
@@ -131,181 +181,68 @@ export const JumpTestHistory = ({
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onPullRefresh}
-            tintColor={colors.text}
+            tintColor={t.color.text.primary}
           />
         }
-        ListHeaderComponent={
-          <BestCard record={best} cardColor={colors.card} />
-        }
-        ItemSeparatorComponent={() => <View style={{ height: Sizing.S }} />}
+        ListHeaderComponent={<BestCard record={best} />}
+        ItemSeparatorComponent={ItemSeparator}
         renderItem={({ item }) => (
-          <RecordCard
-            record={item}
-            cardColor={colors.card}
-            primaryColor={colors.primary}
+          <ListItem
+            leading={
+              <Icon name="Timer" size="L" color={t.color.brand.primary} />
+            }
+            title={`${item.heightCm.toFixed(1)} cm`}
+            subtitle={`${formatRelative(item.createdAt)} · airtime ${
+              item.airtimeMs
+            } ms`}
+            trailing={
+              <Icon
+                name="ChevronRight"
+                size="L"
+                color={t.color.text.tertiary}
+              />
+            }
             onPress={() => onItemPress(item)}
             onLongPress={() => onItemLongPress(item)}
           />
         )}
       />
       <View style={styles.footer}>
-        <Button type="PRIMARY" text="NUEVO SALTO" onPress={goExplanation} />
+        <Button variant="primary" iconLeft="Plus" onPress={goExplanation}>
+          Nuevo salto
+        </Button>
       </View>
-    </View>
-  );
-};
-
-const BestCard = ({
-  record,
-  cardColor,
-}: {
-  record: JumpRecord;
-  cardColor: string;
-}) => {
-  return (
-    <View style={[styles.bestCard, { backgroundColor: cardColor }]}>
-      <Text
-        fontSize="XS"
-        fontWeight="bold"
-        color="background"
-        style={styles.bestLabel}>
-        RÉCORD PERSONAL
-      </Text>
-      <View style={styles.bestRow}>
-        <Text style={styles.bestNumber} fontWeight="bold" color="background">
-          {record.heightCm.toFixed(1)}
-        </Text>
-        <Text
-          fontSize="XL"
-          fontWeight="bold"
-          color="background"
-          style={styles.bestUnit}>
-          cm
-        </Text>
-      </View>
-      <Text fontSize="S" fontWeight="bold" color="background" style={{ opacity: 0.85 }}>
-        {formatRelative(record.createdAt)} · {record.airtimeMs} ms
-      </Text>
-    </View>
-  );
-};
-
-const RecordCard = ({
-  record,
-  cardColor,
-  onPress,
-  onLongPress,
-}: {
-  record: JumpRecord;
-  cardColor: string;
-  primaryColor: string;
-  onPress: () => void;
-  onLongPress: () => void;
-}) => {
-  return (
-    <TouchableOpacity
-      activeOpacity={0.85}
-      onPress={onPress}
-      onLongPress={onLongPress}
-      delayLongPress={350}
-      style={[styles.itemCard, { borderLeftColor: cardColor }]}>
-      <View style={styles.itemLeft}>
-        <Text style={styles.itemHeight} fontWeight="bold">
-          {record.heightCm.toFixed(1)}
-        </Text>
-        <Text fontSize="M" fontWeight="bold" style={styles.itemUnit}>
-          cm
-        </Text>
-      </View>
-      <View style={styles.itemRight}>
-        <Text fontSize="S" fontWeight="bold">
-          {formatRelative(record.createdAt)}
-        </Text>
-        <Text fontSize="XS" style={styles.itemAirtime}>
-          Airtime {record.airtimeMs} ms
-        </Text>
-      </View>
-    </TouchableOpacity>
+    </Container>
   );
 };
 
 const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-  },
-  center: { justifyContent: 'center', alignItems: 'center' },
-  centerText: { textAlign: 'center' },
-  subtitle: { opacity: 0.6 },
-  empty: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: Sizing.L,
-    paddingHorizontal: Sizing.M,
-  },
   listContent: {
-    padding: Sizing.M,
-    paddingBottom: 100,
+    padding: tokens.layout.screenPadding,
+    paddingBottom: 120,
+    gap: tokens.spacing.sm,
+  },
+  separatorGap: {
+    height: tokens.spacing.sm,
   },
   bestCard: {
-    borderRadius: Sizing.XS,
-    padding: Sizing.M,
-    marginBottom: Sizing.M,
-    gap: Sizing.XXS,
-  },
-  bestLabel: {
-    letterSpacing: 2,
-    opacity: 0.85,
+    marginBottom: tokens.spacing.lg,
+    gap: tokens.spacing.xs,
   },
   bestRow: {
     flexDirection: 'row',
     alignItems: 'flex-end',
   },
-  bestNumber: {
-    fontSize: 64,
-    lineHeight: 70,
-  },
   bestUnit: {
-    marginLeft: Sizing.XXS,
-    marginBottom: Sizing.XXS,
-    opacity: 0.85,
-  },
-  itemCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#1a1a1a',
-    borderLeftWidth: 4,
-    borderRadius: Sizing.XXS,
-    padding: Sizing.M,
-    gap: Sizing.M,
-  },
-  itemLeft: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-  },
-  itemHeight: {
-    fontSize: 36,
-    lineHeight: 38,
-    color: '#FFFFFF',
-  },
-  itemUnit: {
-    marginLeft: Sizing.XXXS,
-    opacity: 0.7,
-  },
-  itemRight: {
-    flex: 1,
-    alignItems: 'flex-end',
-    gap: 2,
-  },
-  itemAirtime: {
-    opacity: 0.6,
+    marginLeft: tokens.spacing.xs,
+    marginBottom: tokens.spacing.sm,
   },
   footer: {
     position: 'absolute',
     left: 0,
     right: 0,
     bottom: 0,
-    padding: Sizing.M,
-    paddingBottom: Sizing.L,
+    padding: tokens.layout.screenPadding,
+    paddingBottom: tokens.spacing['2xl'],
   },
 });

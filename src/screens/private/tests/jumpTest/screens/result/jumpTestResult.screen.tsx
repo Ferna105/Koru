@@ -7,10 +7,9 @@ import Animated, {
   withTiming,
   withDelay,
 } from 'react-native-reanimated';
-import { useTheme } from '@react-navigation/native';
-import { Button, Text } from 'components';
+import { Button, Container, Text } from 'components';
+import { tokens, useTheme } from 'design-system';
 import { JumpTestStackScreenProps } from 'navigation/types';
-import { Sizing } from 'utils/sizing';
 import { JumpRecord } from '../../jumpTest.types';
 import { testsService } from 'services/tests/tests.services';
 
@@ -21,7 +20,7 @@ export const JumpTestResult = ({
   route,
   navigation,
 }: JumpTestStackScreenProps<'JumpTestResult'>) => {
-  const { colors } = useTheme();
+  const t = useTheme();
   const { videoUri, startMs, endMs, heightCm, recordId } = route.params;
   const airtimeMs = Math.max(0, endMs - startMs);
   const alreadyPersisted = !!recordId;
@@ -56,8 +55,12 @@ export const JumpTestResult = ({
   }, [heroOpacity, heroScale]);
 
   useEffect(() => {
-    if (alreadyPersisted) return;
-    if (persistedRef.current) return;
+    if (alreadyPersisted) {
+      return;
+    }
+    if (persistedRef.current) {
+      return;
+    }
     persistedRef.current = true;
 
     const persist = async () => {
@@ -91,7 +94,9 @@ export const JumpTestResult = ({
 
   const onShare = async () => {
     const uri = record?.videoUri ?? videoUri;
-    const message = `Salté ${heightCm.toFixed(1)} cm con Koru (airtime ${airtimeMs} ms)`;
+    const message = `Salté ${heightCm.toFixed(
+      1,
+    )} cm con Koru (airtime ${airtimeMs} ms)`;
     try {
       await Share.open({
         url: uri,
@@ -112,91 +117,79 @@ export const JumpTestResult = ({
   const heightDec = Math.round((heightCm - heightInt) * 10);
 
   return (
-    <View style={[styles.screen, { backgroundColor: colors.background }]}>
+    <Container variant="base" noPadding>
       <Animated.View style={[styles.hero, heroAnimatedStyle]}>
-        <Text fontSize="M" fontWeight="bold" style={styles.heroLabel}>
-          ALTURA DE SALTO
+        <Text variant="overline" tone="brand">
+          Altura de salto
         </Text>
         <View style={styles.heroNumberWrapper}>
-          <Text style={styles.heroNumber} fontWeight="bold">
+          <Text variant="displayXL" family="display" style={styles.heroNumber}>
             {heightInt}.{heightDec}
           </Text>
-          <Text fontWeight="bold" style={styles.heroUnit}>
+          <Text
+            variant="displaySM"
+            tone="secondary"
+            family="display"
+            style={styles.heroUnit}>
             cm
           </Text>
         </View>
-        <Text fontSize="XL" fontWeight="bold" style={styles.heroAirtime}>
+        <Text variant="monoLG" tone="secondary">
           Airtime {airtimeMs} ms
         </Text>
       </Animated.View>
 
       {saving && (
         <View style={styles.savingRow}>
-          <ActivityIndicator color={colors.text} size="small" />
-          <Text fontSize="S" fontWeight="bold" style={styles.savingText}>
+          <ActivityIndicator color={t.color.text.primary} size="small" />
+          <Text variant="caption" tone="secondary">
             Guardando en historial…
           </Text>
         </View>
       )}
 
       <View style={styles.footer}>
-        <Button type="PRIMARY" text="COMPARTIR" onPress={onShare} />
-        <View style={{ height: Sizing.S }} />
-        <Button type="TERTIARY" text="VER HISTORIAL" onPress={onGoHistory} />
+        <Button variant="primary" iconLeft="Share" onPress={onShare}>
+          Compartir
+        </Button>
+        <Button variant="ghost" onPress={onGoHistory}>
+          Ver historial
+        </Button>
       </View>
-    </View>
+    </Container>
   );
 };
 
 const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-  },
   hero: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: Sizing.M,
-    gap: Sizing.S,
-  },
-  heroLabel: {
-    opacity: 0.7,
-    letterSpacing: 3,
-    marginBottom: Sizing.XS,
+    padding: tokens.layout.screenPadding,
+    gap: tokens.spacing.sm,
   },
   heroNumberWrapper: {
     flexDirection: 'row',
     alignItems: 'flex-end',
   },
   heroNumber: {
-    fontSize: 160,
-    color: '#FFFFFF',
-    lineHeight: 170,
+    fontSize: 144,
+    lineHeight: 156,
   },
   heroUnit: {
-    fontSize: 48,
-    color: '#FFFFFF',
-    marginLeft: Sizing.XS,
-    marginBottom: Sizing.L,
-    opacity: 0.85,
-  },
-  heroAirtime: {
-    opacity: 0.8,
-    marginTop: Sizing.S,
+    marginLeft: tokens.spacing.sm,
+    marginBottom: tokens.spacing.lg,
   },
   savingRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: Sizing.XS,
-    paddingBottom: Sizing.S,
-  },
-  savingText: {
-    opacity: 0.8,
-    letterSpacing: 1,
+    gap: tokens.spacing.xs,
+    paddingBottom: tokens.spacing.sm,
   },
   footer: {
-    padding: Sizing.M,
-    paddingBottom: Sizing.L,
+    padding: tokens.layout.screenPadding,
+    paddingBottom: tokens.spacing['2xl'],
+    gap: tokens.spacing.sm,
   },
 });

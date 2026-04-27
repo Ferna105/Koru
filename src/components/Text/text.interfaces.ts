@@ -1,6 +1,3 @@
-import { TextStyle } from 'react-native';
-import { ColorsPallete } from 'utils/colors';
-import { Sizing } from 'utils/sizing';
 import { TypeVariant, FontFamily, Tokens } from 'design-system';
 
 export type TextTone =
@@ -22,11 +19,4 @@ export interface TextProps {
    * matches the chosen variant.
    */
   family?: FontFamily;
-
-  /** @deprecated Use `variant` instead. */
-  fontSize?: keyof typeof Sizing;
-  /** @deprecated Use `tone` instead. Maps onto React Navigation's theme palette. */
-  color?: keyof ColorsPallete;
-  /** @deprecated Use `variant` instead — token-driven weights live there. */
-  fontWeight?: TextStyle['fontWeight'];
 }

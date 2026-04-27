@@ -1,18 +1,17 @@
 import { StyleSheet } from 'react-native';
-import { Sizing } from 'utils/sizing';
+import { tokens } from 'design-system';
 
 export const styles = StyleSheet.create({
-  container: {
-    paddingHorizontal: Sizing.M,
-    paddingTop: Sizing.M,
-  },
-  title: {
-    marginBottom: Sizing.XXS,
+  content: {
+    flex: 1,
+    paddingHorizontal: tokens.layout.screenPadding,
+    paddingTop: tokens.spacing.lg,
+    gap: tokens.spacing.lg,
   },
   subtitle: {
-    marginBottom: Sizing.XXL,
+    marginBottom: tokens.spacing.xs,
   },
   list: {
-    gap: Sizing.M,
+    gap: tokens.spacing.md,
   },
 });

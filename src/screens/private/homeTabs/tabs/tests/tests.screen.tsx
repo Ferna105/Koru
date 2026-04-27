@@ -1,10 +1,9 @@
 import React from 'react';
 import { View } from 'react-native';
 
-import { Container, Text } from 'components';
+import { Container, TestCard, Text, TopBar } from 'components';
 import { HomeTabScreenProps } from 'navigation/types';
 import { TESTS_CATALOG, TestDefinition } from './tests.catalog';
-import { TestCard } from './components/testCard.component';
 import { styles } from './tests.styles';
 
 export const Tests = ({ navigation }: HomeTabScreenProps<'Tests'>) => {
@@ -15,21 +14,24 @@ export const Tests = ({ navigation }: HomeTabScreenProps<'Tests'>) => {
   };
 
   return (
-    <Container style={styles.container}>
-      <Text style={styles.title} fontSize="XXXL" fontWeight="bold" color="card">
-        Mis tests
-      </Text>
-      <Text style={styles.subtitle} fontSize="S">
-        A continuación podrás ver todos los tests que hiciste y agregar nuevos
-      </Text>
-      <View style={styles.list}>
-        {TESTS_CATALOG.map(test => (
-          <TestCard
-            key={test.id}
-            test={test}
-            onPress={() => handlePressTest(test)}
-          />
-        ))}
+    <Container variant="base" noPadding>
+      <TopBar title="Tests" />
+      <View style={styles.content}>
+        <Text variant="bodyMD" tone="secondary" style={styles.subtitle}>
+          Elegí un test para ejecutarlo o revisar tu historial.
+        </Text>
+        <View style={styles.list}>
+          {TESTS_CATALOG.map(test => (
+            <TestCard
+              key={test.id}
+              title={test.title}
+              subtitle="Salto vertical"
+              accent={test.featured ? 'gold' : 'none'}
+              starred={test.featured}
+              onPress={() => handlePressTest(test)}
+            />
+          ))}
+        </View>
       </View>
     </Container>
   );

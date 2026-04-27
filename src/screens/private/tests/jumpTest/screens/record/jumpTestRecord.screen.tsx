@@ -9,7 +9,7 @@ import Animated, {
 import {
   View,
   StyleSheet,
-  TouchableOpacity,
+  Pressable,
   Linking,
   Platform,
   AppState,
@@ -25,18 +25,17 @@ import {
   CameraPosition,
   VideoFile,
 } from 'react-native-vision-camera';
-import { useTheme } from '@react-navigation/native';
 import { useFocusEffect } from '@react-navigation/native';
-import { Button, Text } from 'components';
+import { Button, Container, Icon, RecordButton, Text } from 'components';
+import { tokens, useTheme } from 'design-system';
 import { JumpTestStackScreenProps } from 'navigation/types';
-import { Sizing } from 'utils/sizing';
 
 type Mode = 'idle' | 'countdown' | 'recording';
 
 export const JumpTestRecord = ({
   navigation,
 }: JumpTestStackScreenProps<'JumpTestRecord'>) => {
-  const { colors } = useTheme();
+  const t = useTheme();
   const camPerm = useCameraPermission();
   const micPerm = useMicrophonePermission();
   const hasPermission = camPerm.hasPermission && micPerm.hasPermission;
@@ -54,7 +53,9 @@ export const JumpTestRecord = ({
   const countdownScale = useSharedValue(1);
   const countdownOpacity = useSharedValue(1);
 
-  const recAnimatedStyle = useAnimatedStyle(() => ({ opacity: recOpacity.value }));
+  const recAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: recOpacity.value,
+  }));
   const countdownAnimatedStyle = useAnimatedStyle(() => ({
     opacity: countdownOpacity.value,
     transform: [{ scale: countdownScale.value }],
@@ -125,19 +126,14 @@ export const JumpTestRecord = ({
   }, [mode, recOpacity]);
 
   useEffect(() => {
-    if (mode !== 'countdown') return;
+    if (mode !== 'countdown') {
+      return;
+    }
     countdownScale.value = 1.6;
     countdownOpacity.value = 0;
     countdownScale.value = withTiming(1, { duration: 350 });
     countdownOpacity.value = withTiming(1, { duration: 220 });
   }, [mode, countdownValue, countdownScale, countdownOpacity]);
-
-  const startCountdown = () => {
-    if (mode !== 'idle') return;
-    setCountdownValue(3);
-    setMode('countdown');
-    tickCountdown(3);
-  };
 
   const tickCountdown = (value: number) => {
     countdownTimerRef.current = setTimeout(() => {
@@ -152,8 +148,19 @@ export const JumpTestRecord = ({
     }, 1000);
   };
 
+  const startCountdown = () => {
+    if (mode !== 'idle') {
+      return;
+    }
+    setCountdownValue(3);
+    setMode('countdown');
+    tickCountdown(3);
+  };
+
   const beginRecording = async () => {
-    if (!cameraRef.current) return;
+    if (!cameraRef.current) {
+      return;
+    }
     recordingStartRef.current = Date.now();
     try {
       cameraRef.current.startRecording({
@@ -194,7 +201,9 @@ export const JumpTestRecord = ({
   };
 
   const stopRecording = async () => {
-    if (!cameraRef.current) return;
+    if (!cameraRef.current) {
+      return;
+    }
     try {
       await cameraRef.current.stopRecording();
     } catch (e) {
@@ -216,68 +225,59 @@ export const JumpTestRecord = ({
   };
 
   const toggleLens = () => {
-    if (mode !== 'idle') return;
+    if (mode !== 'idle') {
+      return;
+    }
     setPosition(p => (p === 'back' ? 'front' : 'back'));
   };
 
   const handleClose = () => {
-    if (mode === 'recording' || mode === 'countdown') return;
+    if (mode === 'recording' || mode === 'countdown') {
+      return;
+    }
     navigation.goBack();
   };
 
   if (!permissionChecked) {
     return (
-      <View
-        style={[
-          styles.fill,
-          styles.center,
-          { backgroundColor: colors.background },
-        ]}>
-        <ActivityIndicator color={colors.text} />
-      </View>
+      <Container variant="base" style={styles.center}>
+        <ActivityIndicator color={t.color.text.primary} />
+      </Container>
     );
   }
 
   if (!hasPermission) {
     return (
-      <View
-        style={[styles.fill, styles.deniedContainer, { backgroundColor: colors.background }]}>
-        <Text fontSize="XXL" fontWeight="bold" style={styles.centerText}>
+      <Container variant="base" style={styles.deniedContainer}>
+        <Text variant="displaySM" family="display" style={styles.centerText}>
           Necesitamos acceso a la cámara
         </Text>
-        <Text fontSize="S" style={[styles.centerText, styles.deniedBody]}>
-          Para grabar el test de salto Koru necesita permiso de cámara y
+        <Text variant="bodyMD" tone="secondary" style={styles.centerText}>
+          Para grabar el test de salto, Koru necesita permiso de cámara y
           micrófono. Activalos desde la configuración del sistema.
         </Text>
         <View style={styles.deniedActions}>
           <Button
-            type="PRIMARY"
-            text="ABRIR CONFIGURACIÓN"
-            onPress={() => Linking.openSettings()}
-          />
-          <View style={{ height: Sizing.S }} />
-          <Button
-            type="TERTIARY"
-            text="VOLVER"
-            onPress={() => navigation.goBack()}
-          />
+            variant="primary"
+            iconLeft="Settings"
+            onPress={() => Linking.openSettings()}>
+            Abrir configuración
+          </Button>
+          <Button variant="ghost" onPress={() => navigation.goBack()}>
+            Volver
+          </Button>
         </View>
-      </View>
+      </Container>
     );
   }
 
   if (!device) {
     return (
-      <View
-        style={[
-          styles.fill,
-          styles.center,
-          { backgroundColor: colors.background },
-        ]}>
-        <Text fontSize="M" style={styles.centerText}>
+      <Container variant="base" style={styles.center}>
+        <Text variant="bodyMD" style={styles.centerText}>
           No se encontró cámara disponible.
         </Text>
-      </View>
+      </Container>
     );
   }
 
@@ -286,7 +286,7 @@ export const JumpTestRecord = ({
   const showIdleControls = mode === 'idle';
 
   return (
-    <View style={[styles.fill, { backgroundColor: colors.background }]}>
+    <View style={[styles.fill, { backgroundColor: t.color.bg.base }]}>
       <Camera
         ref={cameraRef}
         style={StyleSheet.absoluteFill}
@@ -303,38 +303,35 @@ export const JumpTestRecord = ({
       </View>
 
       {showIdleControls && (
-        <Text
-          fontSize="M"
-          fontWeight="bold"
-          style={styles.hintTop}>
+        <Text variant="label" style={styles.hintTop}>
           Apuntá la cámara a tu pie
         </Text>
       )}
 
       {showIdleControls && (
-        <TouchableOpacity
+        <Pressable
           style={[styles.topLeft, styles.iconBtn]}
           onPress={handleClose}
-          hitSlop={12}>
-          <Text fontSize="XXL" fontWeight="bold">
-            ✕
-          </Text>
-        </TouchableOpacity>
+          hitSlop={t.layout.minHitSlop}>
+          <Icon name="X" size="L" />
+        </Pressable>
       )}
 
       {showIdleControls && (
-        <TouchableOpacity
+        <Pressable
           style={[styles.topRight, styles.iconBtn]}
           onPress={toggleLens}
-          hitSlop={12}>
-          <Text fontSize="XL">↺</Text>
-        </TouchableOpacity>
+          hitSlop={t.layout.minHitSlop}>
+          <Icon name="Settings" size="L" />
+        </Pressable>
       )}
 
       {isRecording && (
         <Animated.View style={[styles.recBadge, recAnimatedStyle]}>
-          <View style={[styles.recDot, { backgroundColor: colors.primary }]} />
-          <Text fontSize="S" fontWeight="bold">
+          <View
+            style={[styles.recDot, { backgroundColor: t.color.brand.danger }]}
+          />
+          <Text variant="label" tone="onDanger">
             REC
           </Text>
         </Animated.View>
@@ -344,36 +341,21 @@ export const JumpTestRecord = ({
         <Animated.View
           pointerEvents="none"
           style={[styles.countdownWrapper, countdownAnimatedStyle]}>
-          <Text style={styles.countdownText} fontWeight="bold">
-            {countdownValue}
+          <Text variant="displayXL" family="mono" style={styles.countdownText}>
+            {String(countdownValue)}
           </Text>
         </Animated.View>
       )}
 
       <View style={styles.bottomBar}>
         {showIdleControls && (
-          <TouchableOpacity
-            onPress={startCountdown}
-            style={[styles.recBtn, { borderColor: colors.text }]}
-            activeOpacity={0.8}>
-            <View style={[styles.recBtnInner, { backgroundColor: colors.primary }]} />
-          </TouchableOpacity>
+          <RecordButton state="idle" onPress={startCountdown} />
         )}
         {isCountdown && (
-          <TouchableOpacity
-            onPress={cancelCountdown}
-            style={[styles.recBtn, { borderColor: colors.text }]}
-            activeOpacity={0.8}>
-            <View style={[styles.recBtnInner, { backgroundColor: colors.text }]} />
-          </TouchableOpacity>
+          <RecordButton state="paused" onPress={cancelCountdown} />
         )}
         {isRecording && (
-          <TouchableOpacity
-            onPress={stopRecording}
-            style={[styles.recBtn, { borderColor: colors.text }]}
-            activeOpacity={0.8}>
-            <View style={[styles.stopBtnInner, { backgroundColor: colors.primary }]} />
-          </TouchableOpacity>
+          <RecordButton state="recording" onPress={stopRecording} />
         )}
       </View>
     </View>
@@ -384,20 +366,16 @@ const FRAME_SIZE_PCT = 0.6;
 
 const styles = StyleSheet.create({
   fill: { flex: 1 },
-  center: { justifyContent: 'center', alignItems: 'center' },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   centerText: { textAlign: 'center' },
   deniedContainer: {
-    paddingHorizontal: Sizing.L,
-    paddingVertical: Sizing.XXL,
+    flex: 1,
     justifyContent: 'center',
-  },
-  deniedBody: {
-    marginTop: Sizing.M,
-    opacity: 0.8,
-    lineHeight: 22,
+    gap: tokens.spacing.lg,
   },
   deniedActions: {
-    marginTop: Sizing.XXL,
+    marginTop: tokens.spacing.xl,
+    gap: tokens.spacing.sm,
   },
   frameWrapper: {
     ...StyleSheet.absoluteFillObject,
@@ -410,7 +388,7 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: 'rgba(255,255,255,0.85)',
     borderStyle: 'dashed',
-    borderRadius: Sizing.XS,
+    borderRadius: tokens.radius.md,
   },
   hintTop: {
     position: 'absolute',
@@ -418,18 +396,19 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     textAlign: 'center',
+    color: '#FFFFFF',
     textShadowColor: 'rgba(0,0,0,0.7)',
     textShadowRadius: 4,
   },
   topLeft: {
     position: 'absolute',
     top: 50,
-    left: Sizing.M,
+    left: tokens.layout.screenPadding,
   },
   topRight: {
     position: 'absolute',
     top: 50,
-    right: Sizing.M,
+    right: tokens.layout.screenPadding,
   },
   iconBtn: {
     width: 44,
@@ -446,10 +425,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: 'rgba(0,0,0,0.55)',
-    paddingHorizontal: Sizing.S,
-    paddingVertical: Sizing.XXS,
-    borderRadius: Sizing.M,
-    gap: Sizing.XXS,
+    paddingHorizontal: tokens.spacing.sm,
+    paddingVertical: tokens.spacing.xs,
+    borderRadius: tokens.radius.md,
+    gap: tokens.spacing.xs,
   },
   recDot: {
     width: 10,
@@ -464,6 +443,7 @@ const styles = StyleSheet.create({
   countdownText: {
     color: '#FFFFFF',
     fontSize: 160,
+    lineHeight: 180,
     textShadowColor: 'rgba(0,0,0,0.6)',
     textShadowRadius: 12,
   },
@@ -473,23 +453,5 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     alignItems: 'center',
-  },
-  recBtn: {
-    width: 84,
-    height: 84,
-    borderRadius: 42,
-    borderWidth: 4,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  recBtnInner: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-  },
-  stopBtnInner: {
-    width: 36,
-    height: 36,
-    borderRadius: 6,
   },
 });

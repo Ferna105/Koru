@@ -1,44 +1,57 @@
 import React from 'react';
 
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import {
+  createBottomTabNavigator,
+  BottomTabBarProps,
+} from '@react-navigation/bottom-tabs';
 import { HomeTabParamList, RootStackScreenProps } from 'navigation/types';
 import { Home } from './tabs/home/home.screen';
 import { Profile } from './tabs/profile/profile.screen';
 import { Tests } from './tabs/tests/tests.screen';
-import { useTheme } from '@react-navigation/native';
+import { BottomNav, BottomNavItem } from 'components';
 
 const BottomTabNavigator = createBottomTabNavigator<HomeTabParamList>();
 
-export const HomeTabs = ({}: RootStackScreenProps<'HomeTabs'>) => {
-  const { colors } = useTheme();
+const TAB_ITEMS: BottomNavItem[] = [
+  { id: 'Home', label: 'Inicio', icon: 'Home' },
+  { id: 'Tests', label: 'Tests', icon: 'List' },
+  { id: 'Profile', label: 'Cuenta', icon: 'User' },
+];
 
+const TabBar = ({ state, navigation }: BottomTabBarProps) => {
+  const activeId = state.routes[state.index].name;
+  return (
+    <BottomNav
+      items={TAB_ITEMS}
+      activeId={activeId}
+      onSelect={id => {
+        const target = state.routes.find(r => r.name === id);
+        if (!target) {
+          return;
+        }
+        const event = navigation.emit({
+          type: 'tabPress',
+          target: target.key,
+          canPreventDefault: true,
+        });
+        const isActive = state.index === state.routes.indexOf(target);
+        if (isActive || event.defaultPrevented) {
+          return;
+        }
+        navigation.navigate(target.name, target.params);
+      }}
+    />
+  );
+};
+
+export const HomeTabs = ({}: RootStackScreenProps<'HomeTabs'>) => {
   return (
     <BottomTabNavigator.Navigator
-      screenOptions={{
-        headerShown: false,
-        tabBarStyle: {
-          backgroundColor: colors.primary,
-          borderTopColor: colors.background,
-        },
-        tabBarInactiveTintColor: colors.background,
-        tabBarActiveTintColor: colors.text,
-        tabBarLabelStyle: { fontWeight: '700', letterSpacing: 1 },
-      }}>
-      <BottomTabNavigator.Screen
-        name="Home"
-        component={Home}
-        options={{ tabBarLabel: 'HOME' }}
-      />
-      <BottomTabNavigator.Screen
-        name="Tests"
-        component={Tests}
-        options={{ tabBarLabel: 'TESTS' }}
-      />
-      <BottomTabNavigator.Screen
-        name="Profile"
-        component={Profile}
-        options={{ tabBarLabel: 'CUENTA' }}
-      />
+      screenOptions={{ headerShown: false }}
+      tabBar={TabBar}>
+      <BottomTabNavigator.Screen name="Home" component={Home} />
+      <BottomTabNavigator.Screen name="Tests" component={Tests} />
+      <BottomTabNavigator.Screen name="Profile" component={Profile} />
     </BottomTabNavigator.Navigator>
   );
 };

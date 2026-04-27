@@ -2,16 +2,19 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
   StyleSheet,
-  TouchableOpacity,
+  Pressable,
   LayoutChangeEvent,
   GestureResponderEvent,
   Alert,
 } from 'react-native';
-import Video, { VideoRef, OnLoadData, OnProgressData } from 'react-native-video';
-import { useTheme } from '@react-navigation/native';
-import { Button, Text } from 'components';
+import Video, {
+  VideoRef,
+  OnLoadData,
+  OnProgressData,
+} from 'react-native-video';
+import { Button, Icon, Text } from 'components';
+import { tokens, useTheme } from 'design-system';
 import { JumpTestStackScreenProps } from 'navigation/types';
-import { Sizing } from 'utils/sizing';
 import { airtimeToHeightCm, formatMs } from '../../jumpTest.physics';
 import { testsService } from 'services/tests/tests.services';
 
@@ -25,7 +28,7 @@ export const JumpTestEditor = ({
   route,
   navigation,
 }: JumpTestStackScreenProps<'JumpTestEditor'>) => {
-  const { colors } = useTheme();
+  const t = useTheme();
   const { videoUri, durationMs: durationFromParams, fps = 30 } = route.params;
 
   const videoRef = useRef<VideoRef>(null);
@@ -52,7 +55,9 @@ export const JumpTestEditor = ({
 
   useEffect(() => {
     const unsub = navigation.addListener('beforeRemove', () => {
-      if (consumedRef.current) return;
+      if (consumedRef.current) {
+        return;
+      }
       testsService.deleteVideoAt(videoUri).catch(() => {});
     });
     return unsub;
@@ -75,7 +80,9 @@ export const JumpTestEditor = ({
   };
 
   const onProgress = (data: OnProgressData) => {
-    if (!isPlaying) return;
+    if (!isPlaying) {
+      return;
+    }
     const currentMs = Math.round(data.currentTime * 1000);
     if (currentMs >= endMs - 16) {
       videoRef.current?.seek(startMs / 1000);
@@ -87,13 +94,17 @@ export const JumpTestEditor = ({
   };
 
   const xToMs = (x: number) => {
-    if (trackWidth <= 0 || durationMs <= 0) return 0;
+    if (trackWidth <= 0 || durationMs <= 0) {
+      return 0;
+    }
     const ratio = Math.min(1, Math.max(0, x / trackWidth));
     return Math.round(ratio * durationMs);
   };
 
   const msToX = (ms: number) => {
-    if (durationMs <= 0) return 0;
+    if (durationMs <= 0) {
+      return 0;
+    }
     const ratio = Math.min(1, Math.max(0, ms / durationMs));
     return ratio * trackWidth;
   };
@@ -121,7 +132,9 @@ export const JumpTestEditor = ({
   };
 
   const onTouchStart = (e: GestureResponderEvent) => {
-    if (trackWidth <= 0) return;
+    if (trackWidth <= 0) {
+      return;
+    }
     setIsPlaying(false);
     const touchX = e.nativeEvent.locationX;
     const touchMs = xToMs(touchX);
@@ -132,7 +145,9 @@ export const JumpTestEditor = ({
 
   const onTouchMove = (e: GestureResponderEvent) => {
     const handle = draggingRef.current;
-    if (!handle) return;
+    if (!handle) {
+      return;
+    }
     const touchX = e.nativeEvent.locationX;
     updateHandle(handle, xToMs(touchX));
   };
@@ -202,7 +217,7 @@ export const JumpTestEditor = ({
   }, [videoSize]);
 
   return (
-    <View style={[styles.screen, { backgroundColor: colors.background }]}>
+    <View style={[styles.screen, { backgroundColor: t.color.bg.base }]}>
       <View style={[styles.videoWrapper, { aspectRatio }]}>
         <Video
           ref={videoRef}
@@ -235,7 +250,9 @@ export const JumpTestEditor = ({
           onResponderMove={onTouchMove}
           onResponderRelease={onTouchEnd}
           onResponderTerminate={onTouchEnd}>
-          <View style={[styles.track, { backgroundColor: '#333' }]} />
+          <View
+            style={[styles.track, { backgroundColor: t.color.bg.elevated }]}
+          />
           {trackWidth > 0 && (
             <View
               style={[
@@ -243,8 +260,7 @@ export const JumpTestEditor = ({
                 {
                   left: startX,
                   width: Math.max(0, endX - startX),
-                  backgroundColor: colors.primary,
-                  opacity: 0.25,
+                  backgroundColor: t.color.brand.primary,
                 },
               ]}
             />
@@ -252,14 +268,14 @@ export const JumpTestEditor = ({
           {trackWidth > 0 && (
             <Bracket
               x={startX}
-              color={colors.primary}
+              color={t.color.brand.primary}
               active={activeHandle === 'start'}
             />
           )}
           {trackWidth > 0 && (
             <Bracket
               x={endX}
-              color={colors.primary}
+              color={t.color.brand.primary}
               active={activeHandle === 'end'}
             />
           )}
@@ -283,21 +299,23 @@ export const JumpTestEditor = ({
         </View>
 
         <View style={styles.actionsRow}>
-          <TouchableOpacity onPress={togglePlay} style={styles.playBtn}>
-            <Text fontSize="S" fontWeight="bold">
-              {isPlaying ? '❚❚  PAUSAR LOOP' : '▶  REPRODUCIR LOOP'}
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={goBackToRecord} style={styles.linkBtn}>
-            <Text fontSize="S" fontWeight="bold" color="card">
-              VOLVER A GRABAR
-            </Text>
-          </TouchableOpacity>
+          <Button
+            variant="ghost"
+            iconLeft={isPlaying ? 'Stop' : 'Play'}
+            fullWidth={false}
+            onPress={togglePlay}>
+            {isPlaying ? 'Pausar loop' : 'Reproducir loop'}
+          </Button>
+          <Button variant="link" fullWidth={false} onPress={goBackToRecord}>
+            Volver a grabar
+          </Button>
         </View>
       </View>
 
       <View style={styles.footer}>
-        <Button type="PRIMARY" text="CALCULAR ALTURA" onPress={goCalculate} />
+        <Button variant="primary" iconLeft="Check" onPress={goCalculate}>
+          Calcular altura
+        </Button>
       </View>
     </View>
   );
@@ -305,12 +323,10 @@ export const JumpTestEditor = ({
 
 const Stat = ({ label, value }: { label: string; value: string }) => (
   <View style={styles.stat}>
-    <Text fontSize="XXXS" style={styles.statLabel}>
+    <Text variant="overline" tone="tertiary">
       {label}
     </Text>
-    <Text fontSize="S" fontWeight="bold">
-      {value}
-    </Text>
+    <Text variant="monoMD">{value}</Text>
   </View>
 );
 
@@ -355,24 +371,17 @@ const StepGroup = ({
 }) => {
   return (
     <View style={styles.stepGroup}>
-      <TouchableOpacity onPress={onMinus} style={styles.stepBtn}>
-        <Text fontSize="S" fontWeight="bold">
-          −1f
-        </Text>
-      </TouchableOpacity>
-      <TouchableOpacity onPress={onSelect} style={styles.stepLabel}>
-        <Text
-          fontSize="XXXS"
-          fontWeight="bold"
-          color={active ? 'primary' : 'text'}>
+      <Pressable onPress={onMinus} style={styles.stepBtn}>
+        <Icon name="ChevronLeft" size="L" />
+      </Pressable>
+      <Pressable onPress={onSelect} style={styles.stepLabel}>
+        <Text variant="overline" tone={active ? 'brand' : 'tertiary'}>
           {label}
         </Text>
-      </TouchableOpacity>
-      <TouchableOpacity onPress={onPlus} style={styles.stepBtn}>
-        <Text fontSize="S" fontWeight="bold">
-          +1f
-        </Text>
-      </TouchableOpacity>
+      </Pressable>
+      <Pressable onPress={onPlus} style={styles.stepBtn}>
+        <Icon name="ChevronRight" size="L" />
+      </Pressable>
     </View>
   );
 };
@@ -389,21 +398,17 @@ const styles = StyleSheet.create({
   },
   body: {
     flex: 1,
-    padding: Sizing.M,
-    gap: Sizing.M,
+    padding: tokens.layout.screenPadding,
+    gap: tokens.spacing.lg,
   },
   statsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    gap: Sizing.S,
+    gap: tokens.spacing.sm,
   },
   stat: {
     flex: 1,
-    gap: 2,
-  },
-  statLabel: {
-    opacity: 0.6,
-    letterSpacing: 1,
+    gap: tokens.spacing.xxs,
   },
   timelineWrapper: {
     height: TIMELINE_HEIGHT,
@@ -419,30 +424,31 @@ const styles = StyleSheet.create({
     top: TIMELINE_HEIGHT / 2 - 3,
     height: 6,
     borderRadius: 3,
+    opacity: 0.35,
   },
   bracket: {
     position: 'absolute',
     top: 0,
     bottom: 0,
     borderWidth: 3,
-    borderRadius: Sizing.XXS,
+    borderRadius: tokens.radius.sm,
   },
   stepRow: {
     flexDirection: 'row',
-    gap: Sizing.S,
+    gap: tokens.spacing.sm,
   },
   stepGroup: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#1a1a1a',
-    borderRadius: Sizing.XXS,
-    padding: Sizing.XXS,
+    backgroundColor: tokens.color.bg.surface,
+    borderRadius: tokens.radius.sm,
+    padding: tokens.spacing.xs,
   },
   stepBtn: {
-    paddingHorizontal: Sizing.S,
-    paddingVertical: Sizing.XXS,
+    paddingHorizontal: tokens.spacing.sm,
+    paddingVertical: tokens.spacing.xs,
   },
   stepLabel: {
     flex: 1,
@@ -452,21 +458,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: Sizing.XS,
-  },
-  playBtn: {
-    paddingHorizontal: Sizing.M,
-    paddingVertical: Sizing.S,
-    borderRadius: Sizing.XXS,
-    borderWidth: 1,
-    borderColor: '#444',
-  },
-  linkBtn: {
-    paddingHorizontal: Sizing.S,
-    paddingVertical: Sizing.S,
+    marginTop: tokens.spacing.xs,
   },
   footer: {
-    padding: Sizing.M,
-    paddingBottom: Sizing.L,
+    padding: tokens.layout.screenPadding,
+    paddingBottom: tokens.spacing['2xl'],
   },
 });

@@ -34,3 +34,5 @@ export type { ToastTone } from './Toast/toast.component';
 export { RecordButton } from './RecordButton/recordButton.component';
 export type { RecordButtonState } from './RecordButton/recordButton.component';
 export { Timeline } from './Timeline/timeline.component';
+export { Logo } from './Logo/logo.component';
+export type { LogoVariant } from './Logo/logo.component';

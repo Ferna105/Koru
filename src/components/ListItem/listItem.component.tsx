@@ -10,6 +10,7 @@ interface ListItemProps {
   leading?: ReactNode;
   trailing?: ReactNode;
   onPress?: () => void;
+  onLongPress?: () => void;
 }
 
 export const ListItem = ({
@@ -18,6 +19,7 @@ export const ListItem = ({
   leading,
   trailing,
   onPress,
+  onLongPress,
 }: ListItemProps) => {
   const tokens = useTheme();
 
@@ -38,10 +40,12 @@ export const ListItem = ({
     </>
   );
 
-  if (onPress) {
+  if (onPress || onLongPress) {
     return (
       <Pressable
         onPress={onPress}
+        onLongPress={onLongPress}
+        delayLongPress={350}
         style={({ pressed }) => [
           styles.base,
           pressed ? { opacity: tokens.opacity.pressed } : null,

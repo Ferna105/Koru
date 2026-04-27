@@ -1,7 +1,5 @@
-// Legacy sizing tokens — values aligned to the 4pt grid in design-system/tokens.
-// New code should prefer importing `tokens` from 'design-system' directly.
-
-import { tokens } from '../design-system/tokens';
+// Sizing scale used by Icon's `size` prop. Numeric values align to the 4pt
+// grid in design-system/tokens. Spacing/Radius live in `tokens` directly.
 
 export enum Sizing {
   XXXS = 4,
@@ -14,13 +12,3 @@ export enum Sizing {
   XXL = 24,
   XXXL = 32,
 }
-
-export enum FontWeight {
-  BOLD = '700',
-  REGULAR = '500',
-  LIGHT = '300',
-}
-
-// Alias to the 4pt grid (numeric tokens) for new code.
-export const Spacing = tokens.spacing;
-export const Radius = tokens.radius;

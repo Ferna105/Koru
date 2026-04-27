@@ -1,9 +1,8 @@
 import React from 'react';
-import { View, ScrollView, StyleSheet } from 'react-native';
-import { useTheme } from '@react-navigation/native';
-import { Button, Text } from 'components';
+import { View, ScrollView, StyleSheet, Pressable } from 'react-native';
+import { Badge, Button, Card, Container, Icon, Text, TopBar } from 'components';
+import { tokens, useTheme } from 'design-system';
 import { JumpTestStackScreenProps } from 'navigation/types';
-import { Sizing } from 'utils/sizing';
 
 const STEPS = [
   'Apoyá el teléfono en el piso con la cámara apuntando hacia arriba, enfocada en tu pie.',
@@ -15,104 +14,88 @@ const STEPS = [
 export const JumpTestExplanation = ({
   navigation,
 }: JumpTestStackScreenProps<'JumpTestExplanation'>) => {
-  const { colors } = useTheme();
+  const t = useTheme();
+
+  const goBack = () => navigation.goBack();
+  const backButton = (
+    <Pressable hitSlop={t.layout.minHitSlop} onPress={goBack}>
+      <Icon name="ChevronLeft" size="L" />
+    </Pressable>
+  );
 
   return (
-    <View style={[styles.screen, { backgroundColor: colors.background }]}>
+    <Container variant="base" noPadding>
+      <TopBar title="Cómo funciona" leading={backButton} />
       <ScrollView
         contentContainerStyle={styles.scroll}
         showsVerticalScrollIndicator={false}>
-        <Text fontSize="XXL" fontWeight="bold">
-          ¿Cómo funciona?
+        <Text variant="displaySM" family="display">
+          Salto vertical
         </Text>
-        <Text fontSize="S" style={styles.intro}>
-          Medimos cuánto tiempo tu pie estuvo en el aire y calculamos
-          la altura con física clásica.
+        <Text variant="bodyMD" tone="secondary">
+          Medimos cuánto tiempo tu pie estuvo en el aire y calculamos la altura
+          con física clásica.
         </Text>
 
         <View style={styles.steps}>
           {STEPS.map((step, index) => (
             <View key={index} style={styles.step}>
-              <View
-                style={[styles.badge, { backgroundColor: colors.primary }]}>
-                <Text fontSize="S" fontWeight="bold">
-                  {index + 1}
-                </Text>
-              </View>
-              <Text fontSize="S" style={styles.stepText}>
+              <Badge tone="gold" size="md">
+                {String(index + 1)}
+              </Badge>
+              <Text variant="bodyMD" style={styles.stepText}>
                 {step}
               </Text>
             </View>
           ))}
         </View>
 
-        <View style={[styles.tip, { borderColor: colors.card }]}>
-          <Text fontSize="S" fontWeight="bold" color="card">
-            TIP
+        <Card variant="outlined" style={styles.tip}>
+          <Text variant="overline" tone="brand">
+            Tip
           </Text>
-          <Text fontSize="S" style={styles.tipText}>
+          <Text variant="bodySM" tone="secondary">
             Si tu dispositivo soporta 60 fps, la medición será más precisa.
           </Text>
-        </View>
+        </Card>
       </ScrollView>
 
-      <View style={[styles.footer, { backgroundColor: colors.background }]}>
+      <View style={styles.footer}>
         <Button
-          type="PRIMARY"
-          text="EMPEZAR A FILMAR"
-          onPress={() => navigation.navigate('JumpTestRecord')}
-        />
+          variant="primary"
+          iconLeft="Record"
+          onPress={() => navigation.navigate('JumpTestRecord')}>
+          Empezar a filmar
+        </Button>
       </View>
-    </View>
+    </Container>
   );
 };
 
 const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-  },
   scroll: {
-    padding: Sizing.M,
-    gap: Sizing.L,
-    paddingBottom: Sizing.XXL,
-  },
-  intro: {
-    opacity: 0.7,
-    lineHeight: 22,
+    padding: tokens.layout.screenPadding,
+    gap: tokens.spacing.lg,
+    paddingBottom: tokens.spacing['3xl'],
   },
   steps: {
-    gap: Sizing.M,
+    gap: tokens.spacing.md,
+    marginTop: tokens.spacing.sm,
   },
   step: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: Sizing.M,
-  },
-  badge: {
-    width: Sizing.XXL,
-    height: Sizing.XXL,
-    borderRadius: Sizing.M,
-    justifyContent: 'center',
-    alignItems: 'center',
-    flexShrink: 0,
+    gap: tokens.spacing.md,
   },
   stepText: {
     flex: 1,
-    lineHeight: 22,
-    paddingTop: Sizing.XXXS,
+    paddingTop: tokens.spacing.xxs,
   },
   tip: {
-    borderWidth: 1,
-    borderRadius: Sizing.XXS,
-    padding: Sizing.M,
-    gap: Sizing.XXS,
-  },
-  tipText: {
-    opacity: 0.8,
-    lineHeight: 20,
+    gap: tokens.spacing.xs,
   },
   footer: {
-    padding: Sizing.M,
-    paddingBottom: Sizing.L,
+    padding: tokens.layout.screenPadding,
+    paddingBottom: tokens.spacing['2xl'],
   },
 });

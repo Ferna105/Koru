@@ -19,33 +19,13 @@ export type ButtonVariant =
   | 'ghost'
   | 'link';
 
-export enum ButtonTypes {
-  PRIMARY = 'PRIMARY',
-  SECONDARY = 'SECONDARY',
-  TERTIARY = 'TERTIARY',
-}
-
-const LEGACY_TO_VARIANT: Record<ButtonTypes, ButtonVariant> = {
-  [ButtonTypes.PRIMARY]: 'primary',
-  [ButtonTypes.SECONDARY]: 'secondary',
-  [ButtonTypes.TERTIARY]: 'ghost',
-};
-
 interface ButtonProps {
-  /** Token-driven visual variant. Preferred. */
   variant?: ButtonVariant;
   size?: ButtonSize;
   loading?: boolean;
   fullWidth?: boolean;
   iconLeft?: keyof typeof Icons;
   iconRight?: keyof typeof Icons;
-
-  /** @deprecated Pass children + `variant` instead. */
-  text?: string;
-  /** @deprecated Use `variant` instead. */
-  type?: keyof typeof ButtonTypes;
-  /** @deprecated Use `iconLeft` instead. */
-  icon?: keyof typeof Icons;
 }
 
 type Props = Omit<TouchableOpacityProps, 'children'> &
@@ -55,24 +35,17 @@ type Props = Omit<TouchableOpacityProps, 'children'> &
   };
 
 export const Button = ({
-  variant,
+  variant = 'primary',
   size = 'md',
   loading,
   fullWidth = true,
   iconLeft,
   iconRight,
-  text,
-  type,
-  icon,
   disabled,
   children,
   ...props
 }: Props) => {
   const tokens = useTheme();
-
-  // Resolve effective variant: explicit `variant` wins, fall back to legacy `type`.
-  const effective: ButtonVariant =
-    variant ?? (type ? LEGACY_TO_VARIANT[type as ButtonTypes] : 'primary');
 
   const VARIANTS: Record<
     ButtonVariant,
@@ -110,13 +83,9 @@ export const Button = ({
     },
   };
 
-  const v = VARIANTS[effective];
+  const v = VARIANTS[variant];
   const s = SIZES[size];
   const isDisabled = disabled || loading;
-
-  // The legacy `icon` prop becomes iconLeft (first variant of the API to leave).
-  const leftIcon = iconLeft ?? icon;
-  const label = children ?? text;
 
   return (
     <Pressable
@@ -140,10 +109,10 @@ export const Button = ({
         },
       ]}>
       {loading && <ActivityIndicator size="small" color={v.fg} />}
-      {leftIcon && !loading && <Icon name={leftIcon} size="L" color={v.fg} />}
-      {label !== undefined && label !== null && (
+      {iconLeft && !loading && <Icon name={iconLeft} size="L" color={v.fg} />}
+      {children !== undefined && children !== null && (
         <Text variant="button" style={{ color: v.fg }}>
-          {label}
+          {children}
         </Text>
       )}
       {iconRight && (
