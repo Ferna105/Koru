@@ -1,0 +1,37 @@
+{
+  "migIndex": 1,
+  "data": [
+    {
+      "path": "assets/fonts/Archivo-Black.ttf",
+      "sha1": "e695f6f3dae6fe4d3fa724a8840c521d2cd6ce21"
+    },
+    {
+      "path": "assets/fonts/Archivo-Bold.ttf",
+      "sha1": "6e53e11356f41aaed1f2ee8c250368011ff38c3c"
+    },
+    {
+      "path": "assets/fonts/Archivo-ExtraBold.ttf",
+      "sha1": "dede32fecfe15b8f17f2a96b825a2ef88a282a60"
+    },
+    {
+      "path": "assets/fonts/JetBrainsMono-Medium.ttf",
+      "sha1": "a7753ab9cb9aa3b4e7c240970f266cca616d9ff3"
+    },
+    {
+      "path": "assets/fonts/Manrope-Bold.ttf",
+      "sha1": "22c3c098d78588440c1377bee3a682607656a6a7"
+    },
+    {
+      "path": "assets/fonts/Manrope-Medium.ttf",
+      "sha1": "13ee5c38e2d3b1d259d6bacaf34665f63483c988"
+    },
+    {
+      "path": "assets/fonts/Manrope-Regular.ttf",
+      "sha1": "a0628f129606a7d99965b5a8e609337c0547a4db"
+    },
+    {
+      "path": "assets/fonts/Manrope-SemiBold.ttf",
+      "sha1": "abe6de4bb7ecb872e1e50c40b977cf8772dd40b0"
+    }
+  ]
+}
