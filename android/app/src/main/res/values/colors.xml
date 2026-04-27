@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="koru_brand_primary">#F2C200</color>
+    <color name="koru_brand_dark">#0A0A0B</color>
+    <color name="ic_launcher_background">#F2C200</color>
+    <color name="bootsplash_background">#f2c200</color>
+</resources>

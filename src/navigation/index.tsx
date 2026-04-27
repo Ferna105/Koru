@@ -1,6 +1,7 @@
-import React, { useContext } from 'react';
+import React, { useContext, useEffect } from 'react';
 
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import BootSplash from 'react-native-bootsplash';
 import { Login } from 'screens/public/login/login.screen';
 import { AuthContext } from 'contexts/auth.context';
 import { RootStackParamList } from './types';
@@ -12,6 +13,14 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export const Navigator = () => {
   const { authToken } = useContext(AuthContext);
+
+  // Hide the native bootsplash once auth hydration finishes (authToken
+  // transitions from `null` to either '' or a real token).
+  useEffect(() => {
+    if (authToken !== null) {
+      BootSplash.hide({ fade: true });
+    }
+  }, [authToken]);
 
   if (authToken === null) {
     return <></>;

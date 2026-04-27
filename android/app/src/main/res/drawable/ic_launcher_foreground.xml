@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Adaptive-icon foreground: koru spiral on transparent. The 108x108 viewport
+     is the Android adaptive icon canvas; the spiral is drawn in a centered 72x72
+     safe area so it survives the system's circular / squircle / rounded-rect mask. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <group
+        android:translateX="18"
+        android:translateY="18"
+        android:scaleX="0.36"
+        android:scaleY="0.36">
+        <path
+            android:strokeColor="#0A0A0B"
+            android:strokeWidth="17"
+            android:strokeLineCap="round"
+            android:pathData="M100,28 C 142,28 172,58 172,100 C 172,142 140,172 100,172 C 64,172 38,146 38,110 C 38,80 60,58 90,58 C 116,58 138,80 138,106 C 138,128 122,144 100,144 C 82,144 68,130 68,112 C 68,98 80,86 94,86 C 106,86 116,96 116,108"/>
+        <path
+            android:fillColor="#0A0A0B"
+            android:pathData="M127,108 a11,11 0 1,0 -22,0 a11,11 0 1,0 22,0"/>
+    </group>
+</vector>
