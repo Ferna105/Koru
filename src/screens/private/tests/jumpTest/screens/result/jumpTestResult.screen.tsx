@@ -10,6 +10,7 @@ import Animated, {
 import { Button, Container, Text } from 'components';
 import { tokens, useTheme } from 'design-system';
 import { JumpTestStackScreenProps } from 'navigation/types';
+import { getJumpType } from '../../jumpTest.catalog';
 import { formatAirtimeMs } from '../../jumpTest.physics';
 import { JumpRecord } from '../../jumpTest.types';
 import { testsService } from 'services/tests/tests.services';
@@ -17,12 +18,21 @@ import { testsService } from 'services/tests/tests.services';
 const generateId = () =>
   `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
 
+/**
+ * Margen que se agrega antes del despegue y después del aterrizaje al recortar
+ * el clip para compartir: da contexto del envión y de la caída, y en Android
+ * absorbe el desfase del corte por keyframe.
+ */
+const SHARE_PADDING_MS = 400;
+
 export const JumpTestResult = ({
   route,
   navigation,
 }: JumpTestStackScreenProps<'JumpTestResult'>) => {
   const t = useTheme();
-  const { videoUri, startMs, endMs, heightCm, recordId } = route.params;
+  const { jumpType, videoUri, startMs, endMs, heightCm, recordId } =
+    route.params;
+  const jump = getJumpType(jumpType);
   const airtimeMs = Math.max(0, endMs - startMs);
   const alreadyPersisted = !!recordId;
 
@@ -30,18 +40,22 @@ export const JumpTestResult = ({
   const [record, setRecord] = useState<JumpRecord | null>(
     alreadyPersisted
       ? {
-        id: recordId!,
-        testId: 'JUMP',
-        createdAt: new Date(0).toISOString(),
-        videoUri,
-        startMs,
-        endMs,
-        airtimeMs,
-        heightCm,
-      }
+          id: recordId!,
+          testId: 'JUMP',
+          jumpType,
+          createdAt: new Date(0).toISOString(),
+          videoUri,
+          startMs,
+          endMs,
+          airtimeMs,
+          heightCm,
+        }
       : null,
   );
   const persistedRef = useRef(false);
+  // Clip recortado ya generado: evita re-recortar si se comparte dos veces.
+  const trimmedUriRef = useRef<string | null>(null);
+  const [sharing, setSharing] = useState(false);
 
   const heroOpacity = useSharedValue(0);
   const heroScale = useSharedValue(0.92);
@@ -71,6 +85,7 @@ export const JumpTestResult = ({
         const newRecord: JumpRecord = {
           id,
           testId: 'JUMP',
+          jumpType,
           createdAt: new Date().toISOString(),
           videoUri: finalUri,
           startMs,
@@ -91,14 +106,42 @@ export const JumpTestResult = ({
       }
     };
     persist();
-  }, [videoUri, startMs, endMs, heightCm, airtimeMs, alreadyPersisted]);
+  }, [
+    videoUri,
+    startMs,
+    endMs,
+    heightCm,
+    airtimeMs,
+    alreadyPersisted,
+    jumpType,
+  ]);
 
   const onShare = async () => {
-    const uri = record?.videoUri ?? videoUri;
-    const message = `Salté ${heightCm.toFixed(
+    const sourceUri = record?.videoUri ?? videoUri;
+    const message = `${jump.title}: salté ${heightCm.toFixed(
       1,
     )} cm con Koru (airtime ${formatAirtimeMs(airtimeMs)} ms)`;
+
+    setSharing(true);
     try {
+      // Se comparte sólo el tramo del salto, no la grabación entera.
+      let uri = trimmedUriRef.current;
+      if (!uri) {
+        try {
+          uri = await testsService.trimVideo(
+            sourceUri,
+            Math.max(0, startMs - SHARE_PADDING_MS),
+            endMs + SHARE_PADDING_MS,
+          );
+          trimmedUriRef.current = uri;
+        } catch (e) {
+          // Si el recorte falla (build viejo sin el módulo nativo, códec raro)
+          // compartimos el video completo en vez de dejar al usuario sin nada.
+          console.warn('Trim failed, sharing full video:', e);
+          uri = sourceUri;
+        }
+      }
+
       await Share.open({
         url: uri,
         type: 'video/mp4',
@@ -107,11 +150,18 @@ export const JumpTestResult = ({
       });
     } catch (e) {
       console.warn('Share failed:', e);
+    } finally {
+      setSharing(false);
     }
   };
 
   const onGoHistory = () => {
-    navigation.popToTop();
+    // Reemplazamos el stack para que el historial quede como única pantalla:
+    // volver desde ahí sale del flujo del test en vez de recorrerlo al revés.
+    navigation.reset({
+      index: 0,
+      routes: [{ name: 'JumpTestHistory', params: { jumpType } }],
+    });
   };
 
   const heightInt = Math.floor(heightCm);
@@ -121,10 +171,15 @@ export const JumpTestResult = ({
     <Container variant="base">
       <Animated.View style={[styles.hero, heroAnimatedStyle]}>
         <Text variant="overline" tone="brand">
-          Altura de salto
+          {jump.title}
         </Text>
         <View style={styles.heroNumberWrapper}>
-          <Text variant="displayXL" family="display" style={styles.heroNumber} adjustsFontSizeToFit numberOfLines={1}>
+          <Text
+            variant="displayXL"
+            family="display"
+            style={styles.heroNumber}
+            adjustsFontSizeToFit
+            numberOfLines={1}>
             {heightInt}.{heightDec}
           </Text>
           <Text
@@ -150,7 +205,12 @@ export const JumpTestResult = ({
       )}
 
       <View style={styles.footer}>
-        <Button variant="primary" iconLeft="Share" onPress={onShare}>
+        <Button
+          variant="primary"
+          iconLeft="Share"
+          loading={sharing}
+          disabled={sharing}
+          onPress={onShare}>
           Compartir
         </Button>
         <Button variant="ghost" onPress={onGoHistory}>
@@ -190,7 +250,7 @@ const styles = StyleSheet.create({
     paddingBottom: tokens.spacing.sm,
   },
   footer: {
-    paddingBottom: tokens.spacing['xs'],
+    paddingBottom: tokens.spacing.xs,
     gap: tokens.spacing.sm,
   },
 });

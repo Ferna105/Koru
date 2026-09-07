@@ -1,5 +1,5 @@
 import React from 'react';
-import { View } from 'react-native';
+import { View, ScrollView } from 'react-native';
 
 import { Container, TestCard, Text, TopBar } from 'components';
 import { HomeTabScreenProps } from 'navigation/types';
@@ -9,30 +9,35 @@ import { styles } from './tests.styles';
 export const Tests = ({ navigation }: HomeTabScreenProps<'Tests'>) => {
   const handlePressTest = (test: TestDefinition) => {
     if (test.id === 'JUMP') {
-      navigation.navigate('JumpTest', { screen: 'JumpTestHistory' });
+      navigation.navigate('JumpTest', {
+        screen: 'JumpTestExplanation',
+        params: { jumpType: test.jumpType },
+      });
     }
   };
 
   return (
     <Container variant="base" noPadding>
       <TopBar title="Tests" />
-      <View style={styles.content}>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}>
         <Text variant="bodyMD" tone="secondary" style={styles.subtitle}>
-          Elegí un test para ejecutarlo o revisar tu historial.
+          Elegí qué salto querés testear. Primero te mostramos la consigna y el
+          video de ejemplo.
         </Text>
         <View style={styles.list}>
           {TESTS_CATALOG.map(test => (
             <TestCard
-              key={test.id}
+              key={test.jumpType}
               title={test.title}
-              subtitle="Salto vertical"
-              accent={test.featured ? 'gold' : 'none'}
-              starred={test.featured}
+              subtitle={test.subtitle}
+              thumbnail={test.thumbnail}
               onPress={() => handlePressTest(test)}
             />
           ))}
         </View>
-      </View>
+      </ScrollView>
     </Container>
   );
 };

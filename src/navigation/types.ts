@@ -4,13 +4,21 @@ import {
 } from '@react-navigation/native';
 import type { StackScreenProps } from '@react-navigation/stack';
 import type { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
+import type { JumpTypeId } from 'screens/private/tests/jumpTest/jumpTest.catalog';
 
 export type JumpTestStackParamList = {
-  JumpTestHistory: undefined;
-  JumpTestExplanation: undefined;
-  JumpTestRecord: undefined;
-  JumpTestEditor: { videoUri: string; durationMs: number; fps?: number };
+  /** Sin `jumpType` muestra el historial de todos los saltos. */
+  JumpTestHistory: { jumpType?: JumpTypeId } | undefined;
+  JumpTestExplanation: { jumpType: JumpTypeId };
+  JumpTestRecord: { jumpType: JumpTypeId };
+  JumpTestEditor: {
+    jumpType: JumpTypeId;
+    videoUri: string;
+    durationMs: number;
+    fps?: number;
+  };
   JumpTestResult: {
+    jumpType: JumpTypeId;
     videoUri: string;
     startMs: number;
     endMs: number;

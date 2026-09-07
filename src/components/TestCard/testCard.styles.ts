@@ -21,8 +21,17 @@ export const styles = StyleSheet.create({
   head: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     gap: tokens.spacing.md,
+  },
+  headText: {
+    flex: 1,
+  },
+  thumbnail: {
+    width: 72,
+    height: 72,
+    borderRadius: tokens.radius.sm,
+    backgroundColor: tokens.color.bg.elevated,
   },
   stat: {
     flexDirection: 'row',

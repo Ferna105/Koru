@@ -1,5 +1,5 @@
 import React from 'react';
-import { Pressable, View } from 'react-native';
+import { Image, ImageSourcePropType, Pressable, View } from 'react-native';
 import { useTheme } from 'design-system';
 import { Text } from 'components/Text/text.component';
 import { Icon } from 'components/Icon/icon.component';
@@ -10,6 +10,8 @@ export type TestCardAccent = 'gold' | 'none';
 interface TestCardProps {
   title: string;
   subtitle?: string;
+  /** Miniatura cuadrada a la izquierda del título (ej.: frame del video). */
+  thumbnail?: ImageSourcePropType;
   /** Numeric value of a recorded result (e.g. "47"). */
   value?: string | number;
   /** Unit label rendered next to the value (e.g. "cm"). */
@@ -24,6 +26,7 @@ interface TestCardProps {
 export const TestCard = ({
   title,
   subtitle,
+  thumbnail,
   value,
   unit,
   accent = 'none',
@@ -49,7 +52,14 @@ export const TestCard = ({
         pressed && onPress ? { opacity: tokens.opacity.pressed } : null,
       ]}>
       <View style={styles.head}>
-        <View style={{ flex: 1 }}>
+        {thumbnail && (
+          <Image
+            source={thumbnail}
+            style={styles.thumbnail}
+            resizeMode="cover"
+          />
+        )}
+        <View style={styles.headText}>
           <Text variant="headingSM" tone={titleTone} family="display">
             {title.toUpperCase()}
           </Text>

@@ -1,12 +1,18 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import {
   View,
   StyleSheet,
   Pressable,
   LayoutChangeEvent,
-  GestureResponderEvent,
   Alert,
 } from 'react-native';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Video, {
   VideoRef,
   OnLoadData,
@@ -15,7 +21,11 @@ import Video, {
 import { Button, Icon, Text } from 'components';
 import { tokens, useTheme } from 'design-system';
 import { JumpTestStackScreenProps } from 'navigation/types';
-import { airtimeToHeightCm, formatAirtimeMs, formatMs } from '../../jumpTest.physics';
+import {
+  airtimeToHeightCm,
+  formatAirtimeMs,
+  formatMs,
+} from '../../jumpTest.physics';
 import { testsService } from 'services/tests/tests.services';
 
 type Handle = 'start' | 'end';
@@ -23,13 +33,27 @@ type Handle = 'start' | 'end';
 const HANDLE_HIT = 28;
 const TIMELINE_HEIGHT = 56;
 const MIN_AIRTIME_MS = 50;
+/** Radio en px alrededor de un bracket para poder agarrarlo y arrastrarlo. */
+const HANDLE_GRAB_PX = 44;
+/**
+ * Los brackets extremos caen en 0 ms y en la duración total. Sin este inset
+ * quedarían sobre la franja de borde que Android/iOS reservan para el gesto de
+ * "atrás" y el sistema se comía el arrastre. El área táctil sigue siendo toda
+ * la fila: sólo el riel se dibuja adentro.
+ */
+const TIMELINE_INSET = 40;
 
 export const JumpTestEditor = ({
   route,
   navigation,
 }: JumpTestStackScreenProps<'JumpTestEditor'>) => {
   const t = useTheme();
-  const { videoUri, durationMs: durationFromParams, fps = 30 } = route.params;
+  const {
+    jumpType,
+    videoUri,
+    durationMs: durationFromParams,
+    fps = 30,
+  } = route.params;
 
   const videoRef = useRef<VideoRef>(null);
   const [durationMs, setDurationMs] = useState(durationFromParams || 0);
@@ -37,6 +61,8 @@ export const JumpTestEditor = ({
   const [endMs, setEndMs] = useState(durationFromParams || 0);
   const [activeHandle, setActiveHandle] = useState<Handle>('start');
   const [isPlaying, setIsPlaying] = useState(false);
+  // Posición del preview sobre la timeline (lo que se está viendo en el video).
+  const [previewMs, setPreviewMs] = useState(0);
   const [trackWidth, setTrackWidth] = useState(0);
   const [videoSize, setVideoSize] = useState<{
     width: number;
@@ -84,22 +110,43 @@ export const JumpTestEditor = ({
       return;
     }
     const currentMs = Math.round(data.currentTime * 1000);
+    setPreviewMs(currentMs);
     if (currentMs >= endMs - 16) {
+      lastSeekRef.current = startMs;
       videoRef.current?.seek(startMs / 1000);
     }
   };
 
-  const seekTo = (ms: number) => {
-    videoRef.current?.seek(ms / 1000);
-  };
+  // Espejo mutable del estado que consumen los callbacks del gesto: así el
+  // objeto Gesture se crea una sola vez y nunca lee valores viejos.
+  const geomRef = useRef({ durationMs, trackWidth, startMs, endMs, frameMs });
+  geomRef.current = { durationMs, trackWidth, startMs, endMs, frameMs };
 
-  const xToMs = (x: number) => {
-    if (trackWidth <= 0 || durationMs <= 0) {
+  const lastSeekRef = useRef(-1);
+
+  const seekTo = useCallback((ms: number) => {
+    // Evitamos re-seekear al mismo frame: cada seek redundante corta la
+    // decodificación y hace que el preview parpadee mientras se arrastra.
+    if (Math.abs(ms - lastSeekRef.current) < 1) {
+      return;
+    }
+    lastSeekRef.current = ms;
+    setPreviewMs(ms);
+    videoRef.current?.seek(ms / 1000);
+  }, []);
+
+  const xToMs = useCallback((x: number) => {
+    const geom = geomRef.current;
+    if (geom.trackWidth <= 0 || geom.durationMs <= 0) {
       return 0;
     }
-    const ratio = Math.min(1, Math.max(0, x / trackWidth));
-    return Math.round(ratio * durationMs);
-  };
+    const ratio = Math.min(1, Math.max(0, x / geom.trackWidth));
+    // Cuantizamos a frames para que arrastrar y usar los botones ± den los
+    // mismos valores y el bracket no tiemble entre dos frames.
+    const snapped =
+      Math.round((ratio * geom.durationMs) / geom.frameMs) * geom.frameMs;
+    return Math.min(geom.durationMs, Math.max(0, Math.round(snapped)));
+  }, []);
 
   const msToX = (ms: number) => {
     if (durationMs <= 0) {
@@ -109,56 +156,94 @@ export const JumpTestEditor = ({
     return ratio * trackWidth;
   };
 
-  const updateHandle = (handle: Handle, value: number) => {
-    if (handle === 'start') {
-      const clamped = Math.max(0, Math.min(value, endMs - MIN_AIRTIME_MS));
-      setStartMs(clamped);
-      seekTo(clamped);
-    } else {
-      const clamped = Math.min(
-        durationMs,
-        Math.max(value, startMs + MIN_AIRTIME_MS),
-      );
-      setEndMs(clamped);
-      seekTo(clamped);
+  const msToXRef = useCallback((ms: number) => {
+    const geom = geomRef.current;
+    if (geom.durationMs <= 0) {
+      return 0;
     }
-    setActiveHandle(handle);
-  };
+    const ratio = Math.min(1, Math.max(0, ms / geom.durationMs));
+    return ratio * geom.trackWidth;
+  }, []);
 
-  const pickClosestHandle = (touchMs: number): Handle => {
-    const distStart = Math.abs(touchMs - startMs);
-    const distEnd = Math.abs(touchMs - endMs);
-    return distStart <= distEnd ? 'start' : 'end';
-  };
+  const updateHandle = useCallback(
+    (handle: Handle, value: number) => {
+      const geom = geomRef.current;
+      if (handle === 'start') {
+        const clamped = Math.max(
+          0,
+          Math.min(value, geom.endMs - MIN_AIRTIME_MS),
+        );
+        setStartMs(clamped);
+        seekTo(clamped);
+      } else {
+        const clamped = Math.min(
+          geom.durationMs,
+          Math.max(value, geom.startMs + MIN_AIRTIME_MS),
+        );
+        setEndMs(clamped);
+        seekTo(clamped);
+      }
+      setActiveHandle(handle);
+    },
+    [seekTo],
+  );
 
-  const onTouchStart = (e: GestureResponderEvent) => {
-    if (trackWidth <= 0) {
-      return;
-    }
-    setIsPlaying(false);
-    const touchX = e.nativeEvent.locationX;
-    const touchMs = xToMs(touchX);
-    const handle = pickClosestHandle(touchMs);
-    draggingRef.current = handle;
-    updateHandle(handle, touchMs);
-  };
+  const onTimelineBegin = useCallback(
+    (x: number) => {
+      const geom = geomRef.current;
+      if (geom.trackWidth <= 0 || geom.durationMs <= 0) {
+        return;
+      }
+      setIsPlaying(false);
+      const distStart = Math.abs(x - msToXRef(geom.startMs));
+      const distEnd = Math.abs(x - msToXRef(geom.endMs));
+      const nearest: Handle = distStart <= distEnd ? 'start' : 'end';
+      if (Math.min(distStart, distEnd) <= HANDLE_GRAB_PX) {
+        draggingRef.current = nearest;
+        updateHandle(nearest, xToMs(x));
+        return;
+      }
+      // Lejos de los brackets no movemos nada: sólo desplazamos el preview,
+      // así un toque suelto no arruina un despegue ya marcado.
+      draggingRef.current = null;
+      seekTo(xToMs(x));
+    },
+    [msToXRef, seekTo, updateHandle, xToMs],
+  );
 
-  const onTouchMove = (e: GestureResponderEvent) => {
-    const handle = draggingRef.current;
-    if (!handle) {
-      return;
-    }
-    const touchX = e.nativeEvent.locationX;
-    updateHandle(handle, xToMs(touchX));
-  };
+  const onTimelineMove = useCallback(
+    (x: number) => {
+      const handle = draggingRef.current;
+      if (handle) {
+        updateHandle(handle, xToMs(x));
+      } else {
+        seekTo(xToMs(x));
+      }
+    },
+    [seekTo, updateHandle, xToMs],
+  );
 
-  const onTouchEnd = () => {
-    draggingRef.current = null;
-  };
+  const timelineGesture = useMemo(
+    () =>
+      Gesture.Pan()
+        // minDistance(0) => el bracket responde desde el primer toque, sin
+        // esperar a que el gesto "gane" por distancia recorrida.
+        .minDistance(0)
+        .shouldCancelWhenOutside(false)
+        .runOnJS(true)
+        // `e.x` llega relativo al borde del contenedor; los brackets se ubican
+        // dentro del padding, así que corregimos por el inset.
+        .onBegin(e => onTimelineBegin(e.x - TIMELINE_INSET))
+        .onUpdate(e => onTimelineMove(e.x - TIMELINE_INSET))
+        .onFinalize(() => {
+          draggingRef.current = null;
+        }),
+    [onTimelineBegin, onTimelineMove],
+  );
 
   const stepFrame = (handle: Handle, dir: -1 | 1) => {
     const current = handle === 'start' ? startMs : endMs;
-    updateHandle(handle, current + dir * frameMs);
+    updateHandle(handle, Math.round(current + dir * frameMs));
   };
 
   const togglePlay = () => {
@@ -186,6 +271,7 @@ export const JumpTestEditor = ({
     const heightCm = Math.round(airtimeToHeightCm(airtimeMs) * 10) / 10;
     consumedRef.current = true;
     navigation.navigate('JumpTestResult', {
+      jumpType,
       videoUri,
       startMs,
       endMs,
@@ -208,6 +294,7 @@ export const JumpTestEditor = ({
   const airtimeMs = Math.max(0, endMs - startMs);
   const startX = msToX(startMs);
   const endX = msToX(endMs);
+  const previewX = msToX(previewMs);
 
   const aspectRatio = useMemo(() => {
     if (videoSize && videoSize.width && videoSize.height) {
@@ -241,45 +328,57 @@ export const JumpTestEditor = ({
           <Stat label="AIRTIME" value={`${formatAirtimeMs(airtimeMs)} ms`} />
         </View>
 
-        <View
-          style={styles.timelineWrapper}
-          onLayout={onLayoutTrack}
-          onStartShouldSetResponder={() => true}
-          onMoveShouldSetResponder={() => true}
-          onResponderGrant={onTouchStart}
-          onResponderMove={onTouchMove}
-          onResponderRelease={onTouchEnd}
-          onResponderTerminate={onTouchEnd}>
-          <View
-            style={[styles.track, { backgroundColor: t.color.bg.elevated }]}
-          />
-          {trackWidth > 0 && (
-            <View
-              style={[
-                styles.selection,
-                {
-                  left: startX,
-                  width: Math.max(0, endX - startX),
-                  backgroundColor: t.color.brand.primary,
-                },
-              ]}
-            />
-          )}
-          {trackWidth > 0 && (
-            <Bracket
-              x={startX}
-              color={t.color.brand.primary}
-              active={activeHandle === 'start'}
-            />
-          )}
-          {trackWidth > 0 && (
-            <Bracket
-              x={endX}
-              color={t.color.brand.primary}
-              active={activeHandle === 'end'}
-            />
-          )}
-        </View>
+        <GestureDetector gesture={timelineGesture}>
+          <View style={styles.timelineWrapper} collapsable={false}>
+            {/*
+              El riel vive en un hijo con margen propio (y no en un padding del
+              contenedor) porque Yoga posiciona los hijos absolutos contra el
+              borde del padre e ignora su padding: los brackets quedarían
+              corridos respecto del riel.
+            */}
+            <View style={styles.timelineTrack} onLayout={onLayoutTrack}>
+              <View
+                style={[styles.track, { backgroundColor: t.color.bg.elevated }]}
+              />
+              {trackWidth > 0 && (
+                <View
+                  pointerEvents="none"
+                  style={[
+                    styles.selection,
+                    {
+                      left: startX,
+                      width: Math.max(0, endX - startX),
+                      backgroundColor: t.color.brand.primary,
+                    },
+                  ]}
+                />
+              )}
+              {trackWidth > 0 && (
+                <View
+                  pointerEvents="none"
+                  style={[
+                    styles.playhead,
+                    { left: previewX, backgroundColor: t.color.text.primary },
+                  ]}
+                />
+              )}
+              {trackWidth > 0 && (
+                <Bracket
+                  x={startX}
+                  color={t.color.brand.primary}
+                  active={activeHandle === 'start'}
+                />
+              )}
+              {trackWidth > 0 && (
+                <Bracket
+                  x={endX}
+                  color={t.color.brand.primary}
+                  active={activeHandle === 'end'}
+                />
+              )}
+            </View>
+          </View>
+        </GestureDetector>
 
         <View style={styles.stepRow}>
           <StepGroup
@@ -414,10 +513,23 @@ const styles = StyleSheet.create({
     height: TIMELINE_HEIGHT,
     justifyContent: 'center',
   },
+  timelineTrack: {
+    height: TIMELINE_HEIGHT,
+    marginHorizontal: TIMELINE_INSET,
+    justifyContent: 'center',
+  },
   track: {
     height: 6,
     borderRadius: 3,
     width: '100%',
+  },
+  playhead: {
+    position: 'absolute',
+    top: TIMELINE_HEIGHT / 2 - 14,
+    width: 2,
+    height: 28,
+    borderRadius: 1,
+    opacity: 0.9,
   },
   selection: {
     position: 'absolute',

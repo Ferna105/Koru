@@ -10,7 +10,7 @@ import { JumpTestResult } from './screens/result/jumpTestResult.screen';
 
 const Stack = createNativeStackNavigator<JumpTestStackParamList>();
 
-export const JumpTestNavigator = ({ }: RootStackScreenProps<'JumpTest'>) => {
+export const JumpTestNavigator = ({}: RootStackScreenProps<'JumpTest'>) => {
   const { colors } = useTheme();
 
   return (
@@ -42,7 +42,9 @@ export const JumpTestNavigator = ({ }: RootStackScreenProps<'JumpTest'>) => {
       <Stack.Screen
         name="JumpTestEditor"
         component={JumpTestEditor}
-        options={{ title: 'SALTOS' }}
+        // El swipe-back del stack compite con el arrastre horizontal de los
+        // brackets de la timeline; en esta pantalla se sale con "Volver a grabar".
+        options={{ title: 'SALTOS', gestureEnabled: false }}
       />
       <Stack.Screen
         name="JumpTestResult"

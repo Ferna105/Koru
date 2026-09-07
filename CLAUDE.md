@@ -34,12 +34,14 @@ RootStack
 │   ├── Tests                ← catalog of available tests
 │   └── Profile              ← labeled "CUENTA" in the tab bar
 └── JumpTest (NativeStack, full-screen, portrait-locked)
-    ├── JumpTestHistory
-    ├── JumpTestExplanation
+    ├── JumpTestHistory      ← optional `jumpType`; without it lists every jump type
+    ├── JumpTestExplanation  ← cue + demo video for the chosen jump (entry point)
     ├── JumpTestRecord       ← VisionCamera, no header
     ├── JumpTestEditor       ← timeline scrubber, frame-stepping
     └── JumpTestResult       ← auto-persists + share
 ```
+
+Every screen in the `JumpTest` stack takes a `jumpType` (`JumpTypeId`). The 5 jump variants live in `src/screens/private/tests/jumpTest/jumpTest.catalog.ts` (title, tagline, description and the `require()` of the demo video under `assets/videos/`), and the Tests tab derives its catalog from there — adding or editing a jump means touching `JUMP_TYPES` plus its mp4, nothing else.
 
 `JumpTest` is intentionally a **sibling** of `HomeTabs` at the root (not nested under the Tests tab) so the camera/editor flow runs full-screen above the tab bar. Adding new tests follows the same pattern: register in `src/screens/private/homeTabs/tabs/tests/tests.catalog.ts`, build a stack under `src/screens/private/tests/<testId>/`, and add a `RootStack.Screen` entry in `src/navigation/index.tsx`.
 
@@ -49,7 +51,11 @@ HTTP services live under `src/services/<domain>/` and expose **hooks** (`useAuth
 
 `ServiceProvider` (`src/contexts/service.context.tsx`) holds a single shared `axios` instance with interceptors that inject `Authorization: Bearer <authToken>` and clear the token on 401. All services pull this instance via `useContext(ServiceContext)` rather than importing axios directly. Base URL lives in `src/services/services.constants.ts` (currently `http://localhost:8080`).
 
-`src/services/tests/tests.services.ts` is different — it's a plain object (not a hook) because it touches AsyncStorage + `react-native-fs` and has no auth/axios dependency. Storage key: `koru:tests:JUMP:history`, capped at `JUMP_HISTORY_LIMIT = 50`. Videos are persisted to `${RNFS.DocumentDirectoryPath}/koru/<id>.mp4`; the `withScheme`/`stripScheme` helpers exist because Android URIs need `file://` and iOS does not — preserve that platform branching when handling video paths.
+`src/services/tests/tests.services.ts` is different — it's a plain object (not a hook) because it touches AsyncStorage + `react-native-fs` and has no auth/axios dependency. Storage key: `koru:tests:JUMP:history`, capped at `JUMP_HISTORY_LIMIT = 50`; all 5 jump types share that key and `loadJumpHistory(jumpType?)` filters it (legacy records with no `jumpType` are normalized to `LEGACY_JUMP_TYPE`). Videos are persisted to `${RNFS.DocumentDirectoryPath}/koru/<id>.mp4`; the `withScheme`/`stripScheme` helpers exist because Android URIs need `file://` and iOS does not — preserve that platform branching when handling video paths.
+
+### Native module: `koru-video-trim`
+
+`modules/koru-video-trim/` is a local native module (autolinked through the `dependencies` entry in `react-native.config.js`, not installed into `node_modules`). It exposes a single method, `trim(sourcePath, startMs, endMs) → outputPath`, used to cut the jump clip before sharing it. Android copies the samples with `MediaExtractor`/`MediaMuxer` (no re-encode, so the cut snaps to the previous keyframe); iOS re-encodes the range with `AVAssetExportSession` (frame-accurate). Consumers go through `testsService.trimVideo`, never `NativeModules` directly. Touching the Kotlin/Swift sources requires a native rebuild (`yarn android`, `bundle exec pod install` + `yarn ios`).
 
 ### Module resolution
 

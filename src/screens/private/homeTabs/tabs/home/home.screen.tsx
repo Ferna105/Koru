@@ -13,17 +13,13 @@ export const Home = ({ navigation }: HomeTabScreenProps<'Home'>) => {
           Acceso rápido
         </Text>
 
-        <Card
-          variant="elevated"
-          onPress={() =>
-            navigation.navigate('JumpTest', { screen: 'JumpTestExplanation' })
-          }>
+        <Card variant="elevated" onPress={() => navigation.navigate('Tests')}>
           <View style={styles.tile}>
             <Icon name="Dumbbell" size="XL" />
             <View style={styles.tileText}>
               <Text variant="headingMD">Test de salto</Text>
               <Text variant="bodySM" tone="secondary">
-                Mide tu salto vertical con cámara lenta.
+                Elegí entre los 5 tipos de salto y medilos con cámara lenta.
               </Text>
             </View>
             <Icon name="ChevronRight" size="L" />

@@ -211,3 +211,29 @@ Todas las fases del plan están ✅. La feature "Test de Salto" cubre el flow co
 - Archs: `4 → 2` (arm64-v8a + x86_64).
 - AVD `Medium_Phone_API_36.0`: partición `/data` 6 GB → 16 GB.
 - Pods iOS instalados.
+
+## Extensión — 5 tipos de salto
+
+El test de salto pasó de ser único a tener 5 variantes que comparten la misma base funcional (grabar → editar → calcular altura). Lo único que cambia por variante es la consigna y el video explicativo.
+
+- **Catálogo**: `src/screens/private/tests/jumpTest/jumpTest.catalog.ts` define `JumpTypeId`, `JUMP_TYPES` (título, tagline, descripción y `require()` del video) y `JUMP_UNIVERSAL_NOTE` (la aclaración que aplica a los 5: el salto debe ser vertical, cayendo en el mismo lugar del apoyo inicial).
+  - `DEEP_SQUAT` — Salto sentadilla profunda
+  - `ARM_SWING` — Salto con impulso
+  - `NO_ARM_SWING` — Salto sin impulso
+  - `BOX_DROP` — Salto desde el cajón
+  - `SINGLE_LEG` — Salto a un pie
+- **Videos**: `assets/videos/*.mp4` (verticales, 394 × 850, 2–4 s). Se bundlean vía Metro (`require`), no se linkean con `react-native-asset`; `react-native-video` los recibe como `source={{ uri: jump.video }}`.
+- **Flow**: tab Tests lista las 5 variantes → `JumpTestExplanation` (consigna + video en loop + aclaración universal + pasos) → Record → Editor → Result. La explicación es ahora la entrada al stack; el historial se abre desde el ícono del TopBar de la explicación o desde el Result.
+- **Params**: todas las pantallas del stack `JumpTest` reciben `jumpType`. `JumpTestHistory` lo tiene opcional: sin él lista el historial de todos los saltos (entrada desde Inicio) y muestra el nombre del salto en cada fila.
+- **Historial**: se mantiene una única key (`koru:tests:JUMP:history`) con `jumpType` en cada `JumpRecord`; `loadJumpHistory(jumpType?)` filtra. El historial general no muestra un "mejor de todos" (los 5 saltos no son comparables entre sí): muestra una card de récord por cada tipo con tests, y tocarla hace `push` al historial de ese salto. Los registros previos a esta extensión no tienen `jumpType` y se normalizan a `LEGACY_JUMP_TYPE = 'ARM_SWING'`, que es el equivalente al salto vertical libre del test original.
+
+## Extensión — compartir el salto recortado
+
+El share del resultado pasó de mandar la grabación entera a mandar sólo el tramo del salto.
+
+- **Módulo nativo local** `modules/koru-video-trim` (autolinkeado desde `react-native.config.js`, sin dependencias de terceros ni peso extra en el bundle):
+  - Android: `MediaExtractor` + `MediaMuxer` copian los samples de video y audio sin re-encodear. El corte de entrada se alinea al keyframe anterior a `startMs`, así que puede arrancar un poco antes; los timestamps se rebasan a 0 y se preserva la rotación vía `setOrientationHint`.
+  - iOS: `AVAssetExportSession` con `timeRange` y preset `HighestQuality` — corte exacto al milisegundo.
+- **API**: `testsService.trimVideo(srcUri, startMs, endMs)` devuelve la URI del clip en el directorio de cache. Los consumidores nunca tocan `NativeModules`.
+- **Padding**: el Result recorta `[startMs - 400ms, endMs + 400ms]` (`SHARE_PADDING_MS`). Da contexto del envión y de la caída, y de paso absorbe el desfase por keyframe en Android.
+- **Fallback**: si el recorte falla (build viejo sin el módulo, códec raro), se comparte el video completo en vez de dejar al usuario sin nada. El clip recortado se cachea en un ref para no rehacerlo si se comparte dos veces.

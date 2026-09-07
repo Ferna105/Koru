@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   View,
   StyleSheet,
@@ -20,6 +20,11 @@ import {
 } from 'components';
 import { useTheme, tokens } from 'design-system';
 import { JumpTestStackScreenProps } from 'navigation/types';
+import {
+  getJumpType,
+  JUMP_TYPES,
+  JumpTypeDefinition,
+} from '../../jumpTest.catalog';
 import { formatAirtimeMs } from '../../jumpTest.physics';
 import { JumpRecord } from '../../jumpTest.types';
 import { testsService } from 'services/tests/tests.services';
@@ -67,28 +72,96 @@ const BestCard = ({ record }: { record: JumpRecord }) => (
       </Text>
     </View>
     <Text variant="monoMD" tone="secondary">
-      {formatRelative(record.createdAt)} · {formatAirtimeMs(record.airtimeMs)} ms
+      {formatRelative(record.createdAt)} · {formatAirtimeMs(record.airtimeMs)}{' '}
+      ms
     </Text>
   </Card>
 );
 
+/**
+ * Récord de un tipo de salto puntual, para el historial general. Los 5 saltos
+ * no son comparables entre sí, así que en vez de un único "mejor de todos" se
+ * muestra el récord de cada uno y cada card entra a su propio historial.
+ */
+const JumpRecordCard = ({
+  jump,
+  record,
+  onPress,
+}: {
+  jump: JumpTypeDefinition;
+  record: JumpRecord;
+  onPress: () => void;
+}) => {
+  const t = useTheme();
+  return (
+    <Card variant="elevated" style={styles.recordCard} onPress={onPress}>
+      <View style={styles.recordHead}>
+        <Text variant="headingSM" family="display" style={styles.recordTitle}>
+          {jump.title.toUpperCase()}
+        </Text>
+        <Icon name="ChevronRight" size="L" color={t.color.text.tertiary} />
+      </View>
+      <View style={styles.bestRow}>
+        <Text variant="displayMD" tone="brand" family="display">
+          {record.heightCm.toFixed(1)}
+        </Text>
+        <Text variant="bodyMD" tone="secondary" style={styles.recordUnit}>
+          cm
+        </Text>
+      </View>
+      <Text variant="monoMD" tone="secondary">
+        {formatRelative(record.createdAt)} · {formatAirtimeMs(record.airtimeMs)}{' '}
+        ms
+      </Text>
+    </Card>
+  );
+};
+
 export const JumpTestHistory = ({
+  route,
   navigation,
 }: JumpTestStackScreenProps<'JumpTestHistory'>) => {
   const t = useTheme();
+  // Sin `jumpType` (por ejemplo entrando desde Inicio) listamos todos los saltos.
+  const jumpType = route.params?.jumpType;
+  const jump = jumpType ? getJumpType(jumpType) : null;
   const [records, setRecords] = useState<JumpRecord[] | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
   const reload = useCallback(async () => {
-    const list = await testsService.loadJumpHistory();
+    const list = await testsService.loadJumpHistory(jumpType);
     setRecords(list);
-  }, []);
+  }, [jumpType]);
 
   useFocusEffect(
     useCallback(() => {
       reload();
     }, [reload]),
   );
+
+  // Récord de cada tipo de salto que tenga al menos un test (sólo aplica al
+  // historial general; en el de un salto puntual alcanza con BestCard).
+  const bestByJumpType = useMemo(() => {
+    if (jump || !records) {
+      return [];
+    }
+    const rows: Array<{ jump: JumpTypeDefinition; record: JumpRecord }> = [];
+    JUMP_TYPES.forEach(definition => {
+      let best: JumpRecord | null = null;
+      records.forEach(record => {
+        if (record.jumpType !== definition.id) {
+          return;
+        }
+        if (!best || record.heightCm > best.heightCm) {
+          best = record;
+        }
+      });
+      if (best) {
+        rows.push({ jump: definition, record: best });
+      }
+    });
+    return rows;
+  }, [jump, records]);
 
   const onPullRefresh = async () => {
     setRefreshing(true);
@@ -101,6 +174,7 @@ export const JumpTestHistory = ({
 
   const onItemPress = (record: JumpRecord) => {
     navigation.navigate('JumpTestResult', {
+      jumpType: record.jumpType,
       videoUri: record.videoUri,
       startMs: record.startMs,
       endMs: record.endMs,
@@ -129,8 +203,14 @@ export const JumpTestHistory = ({
     );
   };
 
-  const goExplanation = () => navigation.navigate('JumpTestExplanation');
+  // Sin tipo de salto seleccionado no hay consigna que explicar: mandamos al
+  // catálogo de tests para que el atleta elija cuál quiere hacer.
+  const goExplanation = () =>
+    jumpType
+      ? navigation.navigate('JumpTestExplanation', { jumpType })
+      : navigation.navigate('HomeTabs', { screen: 'Tests' });
   const goBack = () => navigation.goBack();
+  const title = jump ? jump.title : 'Historial';
 
   const backButton = (
     <Pressable hitSlop={t.layout.minHitSlop} onPress={goBack}>
@@ -141,7 +221,7 @@ export const JumpTestHistory = ({
   if (records === null) {
     return (
       <Container variant="base" noPadding>
-        <TopBar title="Historial" leading={backButton} />
+        <TopBar title={title} leading={backButton} />
       </Container>
     );
   }
@@ -149,19 +229,25 @@ export const JumpTestHistory = ({
   if (records.length === 0) {
     return (
       <Container variant="base" noPadding>
-        <TopBar title="Historial" leading={backButton} />
-        <Empty
-          icon={
-            <Icon name="Dumbbell" size="XXXL" color={t.color.brand.primary} />
-          }
-          title="Aún no hay tests"
-          body="Hacé tu primer salto para empezar a medirte."
-          action={
-            <Button variant="primary" onPress={goExplanation}>
-              Nuevo salto
-            </Button>
-          }
-        />
+        <TopBar title={title} leading={backButton} />
+        <View style={styles.emptyBody}>
+          <Empty
+            icon={
+              <Icon name="Dumbbell" size="XXXL" color={t.color.brand.primary} />
+            }
+            title="Aún no hay tests"
+            body={
+              jump
+                ? `Todavía no registraste ningún ${jump.title.toLowerCase()}.`
+                : 'Hacé tu primer salto para empezar a medirte.'
+            }
+          />
+        </View>
+        <View style={styles.emptyFooter}>
+          <Button variant="primary" iconLeft="Plus" onPress={goExplanation}>
+            Nuevo salto
+          </Button>
+        </View>
       </Container>
     );
   }
@@ -171,9 +257,36 @@ export const JumpTestHistory = ({
     records[0],
   );
 
+  const listHeader = jump ? (
+    <BestCard record={best} />
+  ) : (
+    <View style={styles.recordsBlock}>
+      <Text variant="overline" tone="tertiary">
+        Tus récords
+      </Text>
+      <View style={styles.recordsList}>
+        {bestByJumpType.map(row => (
+          <JumpRecordCard
+            key={row.jump.id}
+            jump={row.jump}
+            record={row.record}
+            // `push` y no `navigate`: así el historial del salto se apila sobre
+            // el general y volver atrás trae de vuelta el listado completo.
+            onPress={() =>
+              navigation.push('JumpTestHistory', { jumpType: row.jump.id })
+            }
+          />
+        ))}
+      </View>
+      <Text variant="overline" tone="tertiary" style={styles.listLabel}>
+        Todos los saltos
+      </Text>
+    </View>
+  );
+
   return (
     <Container variant="base" noPadding>
-      <TopBar title="Historial" leading={backButton} />
+      <TopBar title={title} leading={backButton} />
       <FlatList
         data={records}
         keyExtractor={item => item.id}
@@ -185,7 +298,7 @@ export const JumpTestHistory = ({
             tintColor={t.color.text.primary}
           />
         }
-        ListHeaderComponent={<BestCard record={best} />}
+        ListHeaderComponent={listHeader}
         ItemSeparatorComponent={ItemSeparator}
         renderItem={({ item }) => (
           <ListItem
@@ -193,7 +306,15 @@ export const JumpTestHistory = ({
               <Icon name="Timer" size="L" color={t.color.brand.primary} />
             }
             title={`${item.heightCm.toFixed(1)} cm`}
-            subtitle={`${formatRelative(item.createdAt)} · airtime ${formatAirtimeMs(item.airtimeMs)} ms`}
+            subtitle={
+              jump
+                ? `${formatRelative(
+                    item.createdAt,
+                  )} · airtime ${formatAirtimeMs(item.airtimeMs)} ms`
+                : `${getJumpType(item.jumpType).title} · ${formatRelative(
+                    item.createdAt,
+                  )}`
+            }
             trailing={
               <Icon
                 name="ChevronRight"
@@ -235,6 +356,40 @@ const styles = StyleSheet.create({
   bestUnit: {
     marginLeft: tokens.spacing.xs,
     marginBottom: tokens.spacing.sm,
+  },
+  recordsBlock: {
+    gap: tokens.spacing.sm,
+    marginBottom: tokens.spacing.lg,
+  },
+  recordsList: {
+    gap: tokens.spacing.sm,
+  },
+  recordCard: {
+    gap: tokens.spacing.xxs,
+  },
+  recordHead: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: tokens.spacing.sm,
+  },
+  recordTitle: {
+    flex: 1,
+  },
+  recordUnit: {
+    marginLeft: tokens.spacing.xs,
+    marginBottom: tokens.spacing.xs,
+  },
+  listLabel: {
+    marginTop: tokens.spacing.sm,
+  },
+  emptyBody: {
+    flex: 1,
+    justifyContent: 'center',
+    paddingHorizontal: tokens.layout.screenPadding,
+  },
+  emptyFooter: {
+    padding: tokens.layout.screenPadding,
+    paddingBottom: tokens.spacing['2xl'],
   },
   footer: {
     position: 'absolute',

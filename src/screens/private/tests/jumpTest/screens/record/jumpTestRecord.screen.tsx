@@ -29,13 +29,17 @@ import { useFocusEffect } from '@react-navigation/native';
 import { Button, Container, Icon, RecordButton, Text } from 'components';
 import { tokens, useTheme } from 'design-system';
 import { JumpTestStackScreenProps } from 'navigation/types';
+import { getJumpType } from '../../jumpTest.catalog';
 
 type Mode = 'idle' | 'countdown' | 'recording';
 
 export const JumpTestRecord = ({
+  route,
   navigation,
 }: JumpTestStackScreenProps<'JumpTestRecord'>) => {
   const t = useTheme();
+  const { jumpType } = route.params;
+  const jump = getJumpType(jumpType);
   const camPerm = useCameraPermission();
   const micPerm = useMicrophonePermission();
   const hasPermission = camPerm.hasPermission && micPerm.hasPermission;
@@ -176,6 +180,7 @@ export const JumpTestRecord = ({
               : video.path;
           setMode('idle');
           navigation.navigate('JumpTestEditor', {
+            jumpType,
             videoUri: uri,
             durationMs,
             fps: targetFps,
@@ -303,9 +308,14 @@ export const JumpTestRecord = ({
       </View>
 
       {showIdleControls && (
-        <Text variant="label" style={styles.hintTop}>
-          Apuntá la cámara a tu pie
-        </Text>
+        <View style={styles.hintTop}>
+          <Text variant="label" style={styles.hintText}>
+            {jump.title.toUpperCase()}
+          </Text>
+          <Text variant="caption" style={styles.hintText}>
+            Apuntá la cámara a tu pie
+          </Text>
+        </View>
       )}
 
       {showIdleControls && (
@@ -392,9 +402,13 @@ const styles = StyleSheet.create({
   },
   hintTop: {
     position: 'absolute',
-    top: 60,
-    left: 0,
-    right: 0,
+    top: 100,
+    left: tokens.spacing['5xl'],
+    right: tokens.spacing['5xl'],
+    alignItems: 'center',
+    gap: tokens.spacing.xxs,
+  },
+  hintText: {
     textAlign: 'center',
     color: '#FFFFFF',
     textShadowColor: 'rgba(0,0,0,0.7)',

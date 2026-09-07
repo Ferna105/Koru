@@ -1,0 +1,8 @@
+{
+  "name": "koru-video-trim",
+  "version": "1.0.0",
+  "description": "Recorte de video sin dependencias externas: MediaMuxer en Android, AVAssetExportSession en iOS.",
+  "private": true,
+  "react-native": "index.js",
+  "main": "index.js"
+}

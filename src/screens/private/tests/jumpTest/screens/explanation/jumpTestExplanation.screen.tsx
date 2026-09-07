@@ -1,20 +1,41 @@
-import React from 'react';
-import { View, ScrollView, StyleSheet, Pressable } from 'react-native';
+import React, { useState } from 'react';
+import {
+  View,
+  ScrollView,
+  StyleSheet,
+  Pressable,
+  useWindowDimensions,
+} from 'react-native';
+import { useIsFocused } from '@react-navigation/native';
+import Video from 'react-native-video';
 import { Badge, Button, Card, Container, Icon, Text, TopBar } from 'components';
 import { tokens, useTheme } from 'design-system';
 import { JumpTestStackScreenProps } from 'navigation/types';
+import { getJumpType, JUMP_UNIVERSAL_NOTE } from '../../jumpTest.catalog';
 
 const STEPS = [
   'Apoyá el teléfono en el piso con la cámara apuntando hacia arriba, enfocada en tu pie.',
-  'Presioná GRABAR, saltá verticalmente y volvé a pisar en el mismo lugar.',
+  'Presioná GRABAR, hacé el salto según la consigna y volvé a pisar en el mismo lugar.',
   'En el editor, marcá el frame exacto de despegue y el de aterrizaje.',
   'Calculamos tu altura de salto automáticamente con física clásica.',
 ];
 
+// Los videos explicativos son verticales (394 × 850).
+const VIDEO_ASPECT_RATIO = 394 / 850;
+
 export const JumpTestExplanation = ({
+  route,
   navigation,
 }: JumpTestStackScreenProps<'JumpTestExplanation'>) => {
   const t = useTheme();
+  const { height } = useWindowDimensions();
+  const isFocused = useIsFocused();
+  const { jumpType } = route.params;
+  const jump = getJumpType(jumpType);
+  const [paused, setPaused] = useState(false);
+
+  const videoHeight = Math.min(420, height * 0.42);
+  const videoWidth = videoHeight * VIDEO_ASPECT_RATIO;
 
   const goBack = () => navigation.goBack();
   const backButton = (
@@ -22,20 +43,65 @@ export const JumpTestExplanation = ({
       <Icon name="ChevronLeft" size="L" />
     </Pressable>
   );
+  const historyButton = (
+    <Pressable
+      hitSlop={t.layout.minHitSlop}
+      onPress={() => navigation.navigate('JumpTestHistory', { jumpType })}>
+      <Icon name="Chart" size="L" />
+    </Pressable>
+  );
 
   return (
     <Container variant="base" noPadding>
-      <TopBar title="Cómo funciona" leading={backButton} />
+      <TopBar
+        title="Cómo funciona"
+        leading={backButton}
+        trailing={historyButton}
+      />
       <ScrollView
         contentContainerStyle={styles.scroll}
         showsVerticalScrollIndicator={false}>
         <Text variant="displaySM" family="display">
-          Salto vertical
+          {jump.title}
         </Text>
         <Text variant="bodyMD" tone="secondary">
-          Medimos cuánto tiempo tu pie estuvo en el aire y calculamos la altura
-          con física clásica.
+          {jump.description}
         </Text>
+
+        <Pressable
+          onPress={() => setPaused(p => !p)}
+          style={[
+            styles.videoFrame,
+            { height: videoHeight, width: videoWidth },
+          ]}>
+          <Video
+            source={{ uri: jump.video }}
+            style={StyleSheet.absoluteFill}
+            resizeMode="contain"
+            repeat
+            muted
+            paused={paused || !isFocused}
+          />
+          {paused && (
+            <View style={styles.playOverlay}>
+              <Icon name="Play" size="XXXL" color={t.color.white} />
+            </View>
+          )}
+        </Pressable>
+        <Text variant="caption" tone="tertiary" style={styles.videoCaption}>
+          {paused
+            ? 'Tocá el video para reproducirlo'
+            : 'Tocá el video para pausarlo'}
+        </Text>
+
+        <Card variant="outlined" style={styles.note}>
+          <Text variant="overline" tone="brand">
+            Importante
+          </Text>
+          <Text variant="bodySM" tone="secondary">
+            {JUMP_UNIVERSAL_NOTE}
+          </Text>
+        </Card>
 
         <View style={styles.steps}>
           {STEPS.map((step, index) => (
@@ -50,7 +116,7 @@ export const JumpTestExplanation = ({
           ))}
         </View>
 
-        <Card variant="outlined" style={styles.tip}>
+        <Card variant="outlined" style={styles.note}>
           <Text variant="overline" tone="brand">
             Tip
           </Text>
@@ -64,7 +130,7 @@ export const JumpTestExplanation = ({
         <Button
           variant="primary"
           iconLeft="Record"
-          onPress={() => navigation.navigate('JumpTestRecord')}>
+          onPress={() => navigation.navigate('JumpTestRecord', { jumpType })}>
           Empezar a filmar
         </Button>
       </View>
@@ -78,6 +144,25 @@ const styles = StyleSheet.create({
     gap: tokens.spacing.lg,
     paddingBottom: tokens.spacing['3xl'],
   },
+  videoFrame: {
+    alignSelf: 'center',
+    borderRadius: tokens.radius.lg,
+    overflow: 'hidden',
+    backgroundColor: tokens.color.bg.sunken,
+  },
+  playOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: tokens.color.bg.overlay,
+  },
+  videoCaption: {
+    textAlign: 'center',
+    marginTop: -tokens.spacing.sm,
+  },
+  note: {
+    gap: tokens.spacing.xs,
+  },
   steps: {
     gap: tokens.spacing.md,
     marginTop: tokens.spacing.sm,
@@ -90,9 +175,6 @@ const styles = StyleSheet.create({
   stepText: {
     flex: 1,
     paddingTop: tokens.spacing.xxs,
-  },
-  tip: {
-    gap: tokens.spacing.xs,
   },
   footer: {
     padding: tokens.layout.screenPadding,
