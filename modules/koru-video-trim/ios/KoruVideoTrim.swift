@@ -1,5 +1,8 @@
 import AVFoundation
 import Foundation
+// Trae RCTPromiseResolveBlock / RCTPromiseRejectBlock (React-Core expone el
+// módulo `React`); el KoruVideoTrim.m ya hace el #import equivalente.
+import React
 
 /**
  Recorta un MP4 con AVAssetExportSession. A diferencia de Android (donde se

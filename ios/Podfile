@@ -8,16 +8,14 @@ require Pod::Executable.execute_command('node', ['-p',
 platform :ios, min_ios_version_supported
 prepare_react_native_project!
 
-# If you are using a `react-native-flipper` your iOS build will fail when `NO_FLIPPER=1` is set.
-# because `react-native-flipper` depends on (FlipperKit,...) that will be excluded
+# Flipper queda desactivado siempre: FlipperKit 0.201 no compila con el libc++ de
+# Xcode 16 (sus headers usan std::function sin incluir <functional>). Es solo una
+# herramienta de debug, está deprecada y React Native la eliminó en 0.74, así que
+# no se pierde nada activo. Para debuggear, el debugger de Hermes en Chrome DevTools.
 #
-# To fix this you can also exclude `react-native-flipper` using a `react-native.config.js`
-# ```js
-# module.exports = {
-#   dependencies: {
-#     ...(process.env.NO_FLIPPER ? { 'react-native-flipper': { platforms: { ios: null } } } : {}),
-# ```
-flipper_config = ENV['NO_FLIPPER'] == "1" ? FlipperConfiguration.disabled : FlipperConfiguration.enabled
+# Poniendo FLIPPER=1 se vuelve a incluir, pero el build va a fallar hasta que se
+# actualice RN o se parcheen los headers de FlipperKit.
+flipper_config = ENV['FLIPPER'] == "1" ? FlipperConfiguration.enabled : FlipperConfiguration.disabled
 
 linkage = ENV['USE_FRAMEWORKS']
 if linkage != nil
@@ -51,5 +49,59 @@ target 'Koru' do
       config[:reactNativePath],
       :mac_catalyst_enabled => false
     )
+
+    # fmt 6.2.1 se compila en C++14, donde `__cpp_char8_t` no existe y define su
+    # propio `enum char8_type`. El libc++ de Xcode 16 eliminó la plantilla
+    # primaria de `std::char_traits`, así que `char_traits<char8_type>` no
+    # compila. En C++20 fmt usa el `char8_t` real, que sí tiene especialización.
+    # fmt 6.2.1 define su propio `enum char8_type` cuando `__cpp_char8_t` no
+    # existe (o sea, por debajo de C++20), y el libc++ de Xcode 16 eliminó la
+    # plantilla primaria de `std::char_traits`, así que `char_traits<char8_type>`
+    # no compila. En C++20 fmt usa el `char8_t` real, que sí tiene
+    # especialización. Hay que ponerlo tanto en fmt como en quien lo incluya:
+    # React-jsi no declara estándar y heredaba el default de Xcode (C++17),
+    # mientras que el resto de los pods de RN ya están en c++20.
+    %w[fmt React-jsi].each do |name|
+      target = installer.pods_project.targets.find { |t| t.name == name }
+      next if target.nil?
+      target.build_configurations.each do |config|
+        config.build_settings['CLANG_CXX_LANGUAGE_STANDARD'] = 'c++20'
+      end
+    end
+
+    # Mismo motivo, del lado de Folly: `StringViewType` habilita
+    # basic_string_view para cualquier ValueType trivial, y con
+    # Range<const unsigned char*> eso pide std::char_traits<unsigned char>, que
+    # ya no existe. Lo acotamos a los char types que sí tienen especialización.
+    # Va acá porque `pod install` reescribe Pods/RCT-Folly desde cero.
+    range_h = File.join(__dir__, 'Pods', 'RCT-Folly', 'folly', 'Range.h')
+    if File.exist?(range_h) && !File.read(range_h).include?('KoruIsStringViewChar')
+      before = [
+        '  template <typename ValueType>',
+        '  struct StringViewType',
+        '      : std::conditional<',
+        '            std::is_trivial<std::remove_const_t<ValueType>>::value,',
+      ].join("\n")
+      after = [
+        '  template <typename V>',
+        '  struct KoruIsStringViewChar',
+        '      : std::integral_constant<',
+        '            bool,',
+        '            std::is_same<V, char>::value ||',
+        '                std::is_same<V, wchar_t>::value ||',
+        '                std::is_same<V, char16_t>::value ||',
+        '                std::is_same<V, char32_t>::value> {};',
+        '  template <typename ValueType>',
+        '  struct StringViewType',
+        '      : std::conditional<',
+        '            KoruIsStringViewChar<std::remove_const_t<ValueType>>::value,',
+      ].join("\n")
+      source = File.read(range_h)
+      raise 'RCT-Folly Range.h: no se encontró StringViewType para parchear' unless source.include?(before)
+      # CocoaPods deja las fuentes descargadas en solo lectura.
+      FileUtils.chmod('u+w', range_h)
+      File.write(range_h, source.sub(before, after))
+      Pod::UI.puts 'Parcheado RCT-Folly/folly/Range.h (std::char_traits en Xcode 16)'.green
+    end
   end
 end
