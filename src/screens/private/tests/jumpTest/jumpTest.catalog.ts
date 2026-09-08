@@ -36,8 +36,8 @@ export const JUMP_TYPES: JumpTypeDefinition[] = [
     tagline: '3 segundos inmóvil y saltás',
     description:
       'Una vez en posición de sentadilla profunda permanecer inmóvil 3 segundos y luego saltar.',
-    video: require('../../../../../assets/videos/salto-sentadilla-profunda.mp4'),
-    thumbnail: require('../../../../../assets/thumbnails/salto-sentadilla-profunda.jpg'),
+    video: require('../../../../../assets/videos/salto-sin-impulso.mp4'),
+    thumbnail: require('../../../../../assets/thumbnails/salto-sin-impulso.jpg'),
   },
   {
     id: 'ARM_SWING',
@@ -54,8 +54,8 @@ export const JUMP_TYPES: JumpTypeDefinition[] = [
     tagline: 'Manos en la cadera',
     description:
       'El salto debe realizarse con las manos en la cadera durante todo el recorrido.',
-    video: require('../../../../../assets/videos/salto-sin-impulso.mp4'),
-    thumbnail: require('../../../../../assets/thumbnails/salto-sin-impulso.jpg'),
+    video: require('../../../../../assets/videos/salto-sentadilla-profunda.mp4'),
+    thumbnail: require('../../../../../assets/thumbnails/salto-sentadilla-profunda.jpg'),
   },
   {
     id: 'BOX_DROP',

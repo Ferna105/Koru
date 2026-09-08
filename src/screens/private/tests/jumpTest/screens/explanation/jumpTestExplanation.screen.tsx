@@ -14,8 +14,8 @@ import { JumpTestStackScreenProps } from 'navigation/types';
 import { getJumpType, JUMP_UNIVERSAL_NOTE } from '../../jumpTest.catalog';
 
 const STEPS = [
-  'Apoyá el teléfono en el piso con la cámara apuntando hacia arriba, enfocada en tu pie.',
-  'Presioná GRABAR, hacé el salto según la consigna y volvé a pisar en el mismo lugar.',
+  'Apoyá el celular en el piso con la cámara apuntando a tu pie en contacto con el suelo. Mientras más cerca esté el pie más certera será el cálculo del salto. No hace falta que se vea el cuerpo completo en el video.',
+  'Presioná GRABAR y hacé el salto según la consigna.',
   'En el editor, marcá el frame exacto de despegue y el de aterrizaje.',
   'Calculamos tu altura de salto automáticamente con física clásica.',
 ];
