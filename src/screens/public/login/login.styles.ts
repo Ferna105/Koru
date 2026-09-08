@@ -20,10 +20,7 @@ export const styles = StyleSheet.create({
   heading: {
     marginBottom: tokens.spacing.xs,
   },
-  field: {
-    marginBottom: tokens.spacing.xs,
-  },
-  separator: {
-    marginVertical: tokens.spacing.sm,
+  helper: {
+    marginBottom: tokens.spacing.sm,
   },
 });

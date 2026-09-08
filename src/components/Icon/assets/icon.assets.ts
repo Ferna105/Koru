@@ -35,4 +35,5 @@ export const {
   Filter,
   Settings,
   Dumbbell,
+  Instagram,
 } = lineIcons;

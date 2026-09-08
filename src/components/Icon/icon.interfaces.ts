@@ -4,6 +4,7 @@ import { Sizing } from 'utils/sizing';
 export enum Icons {
   // Brand
   Google = 'Google',
+  Instagram = 'Instagram',
   // Navigation / chevrons
   ChevronDown = 'ChevronDown',
   ChevronLeft = 'ChevronLeft',

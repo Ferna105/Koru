@@ -27,6 +27,12 @@ export type JumpTestStackParamList = {
   };
 };
 
+export type ProfileStackParamList = {
+  ProfileHome: undefined;
+  MyProfile: undefined;
+  About: undefined;
+};
+
 export type RootStackParamList = {
   HomeTabs: NavigatorScreenParams<HomeTabParamList>;
   Login: undefined;
@@ -39,13 +45,19 @@ export type RootStackScreenProps<T extends keyof RootStackParamList> =
 export type HomeTabParamList = {
   Home: undefined;
   Tests: undefined;
-  Profile: undefined;
+  Profile: NavigatorScreenParams<ProfileStackParamList> | undefined;
 };
 
 export type HomeTabScreenProps<T extends keyof HomeTabParamList> =
   CompositeScreenProps<
     BottomTabScreenProps<HomeTabParamList, T>,
     RootStackScreenProps<keyof RootStackParamList>
+  >;
+
+export type ProfileStackScreenProps<T extends keyof ProfileStackParamList> =
+  CompositeScreenProps<
+    StackScreenProps<ProfileStackParamList, T>,
+    HomeTabScreenProps<keyof HomeTabParamList>
   >;
 
 export type JumpTestStackScreenProps<T extends keyof JumpTestStackParamList> =

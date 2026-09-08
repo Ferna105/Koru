@@ -6,7 +6,7 @@ import {
 } from '@react-navigation/bottom-tabs';
 import { HomeTabParamList, RootStackScreenProps } from 'navigation/types';
 import { Home } from './tabs/home/home.screen';
-import { Profile } from './tabs/profile/profile.screen';
+import { ProfileNavigator } from './tabs/profile/profile.navigator';
 import { Tests } from './tabs/tests/tests.screen';
 import { BottomNav, BottomNavItem } from 'components';
 
@@ -51,7 +51,7 @@ export const HomeTabs = ({}: RootStackScreenProps<'HomeTabs'>) => {
       tabBar={TabBar}>
       <BottomTabNavigator.Screen name="Home" component={Home} />
       <BottomTabNavigator.Screen name="Tests" component={Tests} />
-      <BottomTabNavigator.Screen name="Profile" component={Profile} />
+      <BottomTabNavigator.Screen name="Profile" component={ProfileNavigator} />
     </BottomTabNavigator.Navigator>
   );
 };

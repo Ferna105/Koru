@@ -18,11 +18,11 @@ React Native 0.73 + TypeScript app. Single feature shipped today: **Koru Test de
 
 ### Provider pyramid (`App.tsx`)
 
-`GestureHandlerRootView` → `NavigationContainer` (custom dark/light themes) → `AuthProvider` → `ServiceProvider` → `Navigator`. The themes are defined inline in `App.tsx`; `colors.card` (yellow `#F2B619`) and `colors.primary` (red `#D42127`) are used pervasively, so prefer `useTheme()` over hardcoding.
+`GestureHandlerRootView` → `ThemeProvider` → `NavigationContainer` (custom dark/light themes) → `AuthProvider` → `UserProvider` → `ServiceProvider` → `Navigator`. `App.tsx` also calls `googleService.configure()` once at module scope, before the first render. The themes are defined inline in `App.tsx`; `colors.card` (yellow `#F2B619`) and `colors.primary` (red `#D42127`) are used pervasively, so prefer `useTheme()` over hardcoding.
 
 ### Auth gate
 
-`src/contexts/auth.context.tsx` keeps `authToken` / `refreshToken` in a reducer mirrored to AsyncStorage (`@authToken`, `@refreshToken`). `Navigator` (`src/navigation/index.tsx`) treats `authToken === null` as "still hydrating from storage" (renders empty fragment), `''` as logged-out (Login stack), any other string as logged-in (HomeTabs + JumpTest stacks). When changing auth flow, preserve this three-state contract.
+`src/contexts/auth.context.tsx` keeps `authToken` / `refreshToken` in a reducer mirrored to AsyncStorage (`@authToken`, `@refreshToken`). For the MVP there is no auth API: the Login screen only offers Google Sign-In and stores the Google user id as `authToken` (any non-empty string means "logged in"). The Google profile itself lives in `src/contexts/user.context.tsx` (`UserProvider`, AsyncStorage key `@user`) and is what the Cuenta tab renders. `src/services/auth/` is kept for when the real API lands, but nothing consumes it today. `Navigator` (`src/navigation/index.tsx`) treats `authToken === null` as "still hydrating from storage" (renders empty fragment), `''` as logged-out (Login stack), any other string as logged-in (HomeTabs + JumpTest stacks). When changing auth flow, preserve this three-state contract.
 
 ### Navigation tree (`src/navigation/types.ts`)
 
@@ -32,7 +32,10 @@ RootStack
 ├── HomeTabs (BottomTabs)    (when logged in)
 │   ├── Home
 │   ├── Tests                ← catalog of available tests
-│   └── Profile              ← labeled "CUENTA" in the tab bar
+│   └── Profile (NativeStack)← labeled "CUENTA" in the tab bar
+│       ├── ProfileHome      ← list + logout
+│       ├── MyProfile        ← read-only Google profile data
+│       └── About            ← app description, version, Instagram contact
 └── JumpTest (NativeStack, full-screen, portrait-locked)
     ├── JumpTestHistory      ← optional `jumpType`; without it lists every jump type
     ├── JumpTestExplanation  ← cue + demo video for the chosen jump (entry point)
@@ -43,6 +46,8 @@ RootStack
 
 Every screen in the `JumpTest` stack takes a `jumpType` (`JumpTypeId`). The 5 jump variants live in `src/screens/private/tests/jumpTest/jumpTest.catalog.ts` (title, tagline, description and the `require()` of the demo video under `assets/videos/`), and the Tests tab derives its catalog from there — adding or editing a jump means touching `JUMP_TYPES` plus its mp4, nothing else.
 
+Unlike `JumpTest`, the Profile stack is **nested inside** its tab (`profile.navigator.tsx`) so the bottom nav stays visible on the sub-screens.
+
 `JumpTest` is intentionally a **sibling** of `HomeTabs` at the root (not nested under the Tests tab) so the camera/editor flow runs full-screen above the tab bar. Adding new tests follows the same pattern: register in `src/screens/private/homeTabs/tabs/tests/tests.catalog.ts`, build a stack under `src/screens/private/tests/<testId>/`, and add a `RootStack.Screen` entry in `src/navigation/index.tsx`.
 
 ### Services layer
@@ -50,6 +55,8 @@ Every screen in the `JumpTest` stack takes a `jumpType` (`JumpTypeId`). The 5 ju
 HTTP services live under `src/services/<domain>/` and expose **hooks** (`useAuthService`, ...) aggregated by `src/services/services.hook.ts` (`useServices`). Each domain has the split: `*.api.interfaces.ts` (raw API shape) → `*.services.mappers.ts` (API → domain) → `*.services.interfaces.ts` (domain shape) → `*.services.ts` (the hook). Keep this separation when adding new endpoints; consumers should never import API interfaces directly.
 
 `ServiceProvider` (`src/contexts/service.context.tsx`) holds a single shared `axios` instance with interceptors that inject `Authorization: Bearer <authToken>` and clear the token on 401. All services pull this instance via `useContext(ServiceContext)` rather than importing axios directly. Base URL lives in `src/services/services.constants.ts` (currently `http://localhost:8080`).
+
+`src/services/google/google.services.ts` follows the `testsService` shape (plain object, no axios): it wraps `@react-native-google-signin/google-signin` and maps its `User` to the `GoogleProfile` domain type. It returns `NOT_CONFIGURED` while `src/config/google.config.ts` still holds the `REPLACE_ME` placeholders — see `GOOGLE_SIGNIN_SETUP.md` for the client IDs and the iOS URL scheme that still need to be filled in.
 
 `src/services/tests/tests.services.ts` is different — it's a plain object (not a hook) because it touches AsyncStorage + `react-native-fs` and has no auth/axios dependency. Storage key: `koru:tests:JUMP:history`, capped at `JUMP_HISTORY_LIMIT = 50`; all 5 jump types share that key and `loadJumpHistory(jumpType?)` filters it (legacy records with no `jumpType` are normalized to `LEGACY_JUMP_TYPE`). Videos are persisted to `${RNFS.DocumentDirectoryPath}/koru/<id>.mp4`; the `withScheme`/`stripScheme` helpers exist because Android URIs need `file://` and iOS does not — preserve that platform branching when handling video paths.
 
@@ -67,6 +74,7 @@ Both `babel.config.js` (module-resolver) and `tsconfig.json` (paths) treat `src/
 
 ## Conventions worth knowing
 
+- Static app metadata (version shown in "Acerca de Koru", Instagram contact URL) lives in `src/config/app.config.ts`. `APP_VERSION` / `APP_BUILD` are hand-kept in sync with `MARKETING_VERSION`/`CURRENT_PROJECT_VERSION` (iOS) and `versionName`/`versionCode` (Android).
 - File naming: `<name>.screen.tsx`, `<name>.styles.ts`, `<name>.component.tsx`, `<name>.navigator.tsx`. Follow it for new files.
 - Physics + formatting helpers for the jump test live in `src/screens/private/tests/jumpTest/jumpTest.physics.ts` (`airtimeToHeightCm`, `formatMs`). Do not inline `g = 9.80665` elsewhere.
 - The Editor screen owns temp-MP4 cleanup via a `consumedRef` + `navigation.addListener('beforeRemove', …)`. If you add a new exit path from Editor, decide explicitly whether the file was "consumed" (moved by `persistVideo`) or should be deleted.

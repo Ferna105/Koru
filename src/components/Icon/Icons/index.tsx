@@ -194,6 +194,14 @@ const Dumbbell: FunctionComponent<SvgProps> = props => (
   </Ico>
 );
 
+const Instagram: FunctionComponent<SvgProps> = props => (
+  <Ico {...props}>
+    <Rect x={3} y={3} width={18} height={18} rx={5} />
+    <Circle cx={12} cy={12} r={4} />
+    <Path d="M17.5 6.5h.01" />
+  </Ico>
+);
+
 // Wrap in `{ default }` so they match the SvgIcon shape used by icon.assets.ts.
 const wrap = (C: FunctionComponent<SvgProps>) => ({ default: C });
 
@@ -222,4 +230,5 @@ export const lineIcons = {
   Filter: wrap(Filter),
   Settings: wrap(Settings),
   Dumbbell: wrap(Dumbbell),
+  Instagram: wrap(Instagram),
 };

@@ -1,39 +1,43 @@
 import React, { useContext, useState } from 'react';
 import { Alert, View } from 'react-native';
-import {
-  Button,
-  Container,
-  Logo,
-  Separator,
-  Text,
-  TextInput,
-} from 'components';
+import { Button, Container, Logo, Text } from 'components';
 import { AuthContext } from 'contexts/auth.context';
-import { useServices } from 'services/services.hook';
+import { UserContext } from 'contexts/user.context';
+import { googleService } from 'services/google/google.services';
 import { RootStackScreenProps } from 'navigation/types';
 import { styles } from './login.styles';
 
 export const Login = ({}: RootStackScreenProps<'Login'>) => {
   const { setAuthToken } = useContext(AuthContext);
-  const { authService } = useServices();
-
-  const [username, setUsername] = useState<string>('matias');
-  const [password, setPassword] = useState<string>('zapillon');
-
-  const onPressLogin = async () => {
-    const authResponse = await authService.authenticate({
-      username: username,
-      password: password,
-    });
-    if (authResponse.status === 'SUCCESS') {
-      setAuthToken(authResponse.data?.authToken ?? '');
-    } else {
-      Alert.alert('Error al loguearse con credenciales');
-    }
-  };
+  const { setUser } = useContext(UserContext);
+  const [loading, setLoading] = useState(false);
 
   const onPressGoogleBtn = async () => {
-    setAuthToken('TEST');
+    setLoading(true);
+    const result = await googleService.signIn();
+    setLoading(false);
+
+    switch (result.status) {
+      case 'SUCCESS':
+        setUser(result.profile);
+        // Sin backend todavía: el id de Google hace de marca de sesión para el
+        // gate de `AuthContext` (cualquier string no vacío = logueado).
+        setAuthToken(result.profile.id);
+        break;
+      case 'CANCELLED':
+        break;
+      case 'NOT_CONFIGURED':
+        Alert.alert(
+          'Google Sign-In sin configurar',
+          'Faltan los client IDs en config/google.config.ts. Ver GOOGLE_SIGNIN_SETUP.md.',
+        );
+        break;
+      default:
+        Alert.alert(
+          'No pudimos iniciar sesión',
+          'Revisá tu conexión y volvé a intentar.',
+        );
+    }
   };
 
   return (
@@ -49,43 +53,15 @@ export const Login = ({}: RootStackScreenProps<'Login'>) => {
         <Text variant="headingLG" style={styles.heading}>
           Iniciar sesión
         </Text>
-
-        <View style={styles.field}>
-          <TextInput
-            label="Usuario"
-            iconLeft="User"
-            autoCapitalize="none"
-            value={username}
-            autoCorrect={false}
-            autoComplete="off"
-            onChangeText={setUsername}
-            placeholder="Tu usuario"
-          />
-        </View>
-        <View style={styles.field}>
-          <TextInput
-            label="Contraseña"
-            value={password}
-            onChangeText={setPassword}
-            placeholder="Tu contraseña"
-            autoCorrect={false}
-            autoComplete="off"
-            autoCapitalize="none"
-            secureTextEntry
-          />
-        </View>
-
-        <Button variant="primary" iconLeft="User" onPress={onPressLogin}>
-          Iniciar sesión
-        </Button>
-
-        <View style={styles.separator}>
-          <Separator tone="subtle" />
-        </View>
+        <Text variant="bodyMD" tone="secondary" style={styles.helper}>
+          Entrá con tu cuenta de Google para guardar tus tests y ver tu
+          historial.
+        </Text>
 
         <Button
           variant="secondary"
           iconLeft="Google"
+          loading={loading}
           onPress={onPressGoogleBtn}>
           Continuar con Google
         </Button>

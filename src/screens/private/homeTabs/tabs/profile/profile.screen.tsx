@@ -9,12 +9,22 @@ import {
   TopBar,
 } from 'components';
 import { AuthContext } from 'contexts/auth.context';
-import { HomeTabScreenProps } from 'navigation/types';
+import { UserContext } from 'contexts/user.context';
+import { googleService } from 'services/google/google.services';
+import { ProfileStackScreenProps } from 'navigation/types';
 import { styles } from './profile.styles';
 
-export const Profile = ({}: HomeTabScreenProps<'Profile'>) => {
+export const Profile = ({
+  navigation,
+}: ProfileStackScreenProps<'ProfileHome'>) => {
   const { setAuthToken } = useContext(AuthContext);
-  const onLogout = () => setAuthToken('');
+  const { setUser } = useContext(UserContext);
+
+  const onLogout = async () => {
+    await googleService.signOut();
+    setUser(null);
+    setAuthToken('');
+  };
 
   return (
     <Container variant="base" noPadding>
@@ -24,22 +34,17 @@ export const Profile = ({}: HomeTabScreenProps<'Profile'>) => {
           <ListItem
             leading={<Icon name="User" size="L" />}
             title="Mi perfil"
-            subtitle="Datos personales y preferencias"
+            subtitle="Tus datos de Google"
             trailing={<Icon name="ChevronRight" size="L" />}
-          />
-          <Separator tone="subtle" />
-          <ListItem
-            leading={<Icon name="Settings" size="L" />}
-            title="Ajustes"
-            subtitle="Notificaciones, unidades, idioma"
-            trailing={<Icon name="ChevronRight" size="L" />}
+            onPress={() => navigation.navigate('MyProfile')}
           />
           <Separator tone="subtle" />
           <ListItem
             leading={<Icon name="Info" size="L" />}
             title="Acerca de Koru"
-            subtitle="Versión, créditos y privacidad"
+            subtitle="Qué hace la app, versión y contacto"
             trailing={<Icon name="ChevronRight" size="L" />}
+            onPress={() => navigation.navigate('About')}
           />
         </View>
 

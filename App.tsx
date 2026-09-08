@@ -3,9 +3,11 @@ import React from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { AuthProvider } from './src/contexts/auth.context';
 import { ServiceProvider } from './src/contexts/service.context';
+import { UserProvider } from './src/contexts/user.context';
 import { Navigator } from './src/navigation';
 import { NavigationContainer, Theme } from '@react-navigation/native';
 import { ThemeProvider, tokens } from './src/design-system';
+import { googleService } from './src/services/google/google.services';
 
 const navTheme: Theme = {
   dark: true,
@@ -19,15 +21,21 @@ const navTheme: Theme = {
   },
 };
 
+// `configure` es sincrónico y hay que llamarlo una sola vez antes del primer
+// `signIn`.
+googleService.configure();
+
 function App() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <ThemeProvider>
         <NavigationContainer theme={navTheme}>
           <AuthProvider>
-            <ServiceProvider>
-              <Navigator />
-            </ServiceProvider>
+            <UserProvider>
+              <ServiceProvider>
+                <Navigator />
+              </ServiceProvider>
+            </UserProvider>
           </AuthProvider>
         </NavigationContainer>
       </ThemeProvider>
