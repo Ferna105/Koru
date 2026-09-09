@@ -1,16 +1,24 @@
 import 'react-native-gesture-handler';
 import React from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthProvider } from './src/contexts/auth.context';
 import { ServiceProvider } from './src/contexts/service.context';
 import { UserProvider } from './src/contexts/user.context';
 import { Navigator } from './src/navigation';
-import { NavigationContainer, Theme } from '@react-navigation/native';
+import {
+  DarkTheme,
+  NavigationContainer,
+  Theme,
+} from '@react-navigation/native';
 import { ThemeProvider, tokens } from './src/design-system';
 import { googleService } from './src/services/google/google.services';
 
 const navTheme: Theme = {
   dark: true,
+  // React Navigation 7 sumó `fonts` al Theme; tomamos las del tema oscuro por
+  // defecto porque la app no personaliza la tipografía de los headers.
+  fonts: DarkTheme.fonts,
   colors: {
     primary: tokens.color.brand.primary,
     background: tokens.color.bg.base,
@@ -28,17 +36,19 @@ googleService.configure();
 function App() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <ThemeProvider>
-        <NavigationContainer theme={navTheme}>
-          <AuthProvider>
-            <UserProvider>
-              <ServiceProvider>
-                <Navigator />
-              </ServiceProvider>
-            </UserProvider>
-          </AuthProvider>
-        </NavigationContainer>
-      </ThemeProvider>
+      <SafeAreaProvider>
+        <ThemeProvider>
+          <NavigationContainer theme={navTheme}>
+            <AuthProvider>
+              <UserProvider>
+                <ServiceProvider>
+                  <Navigator />
+                </ServiceProvider>
+              </UserProvider>
+            </AuthProvider>
+          </NavigationContainer>
+        </ThemeProvider>
+      </SafeAreaProvider>
     </GestureHandlerRootView>
   );
 }

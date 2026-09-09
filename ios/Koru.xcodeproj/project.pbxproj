@@ -24,6 +24,7 @@
 		F50C4EA5A19D490FB4AD05DD /* JetBrainsMono-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 69A1342DD86141CDB2FD862A /* JetBrainsMono-Medium.ttf */; };
 		F63C400DF7DF4F18B380F280 /* BootSplash.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 2B6D2501012344F29A547755 /* BootSplash.storyboard */; };
 		F80EF7AAEA25405EA1288F51 /* Manrope-SemiBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 43A57B1B32C04D53A1AD37C3 /* Manrope-SemiBold.ttf */; };
+		F9E9F10CF515F275B880E892 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 89FDE1DBA9203CF77F76E21D /* PrivacyInfo.xcprivacy */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -60,6 +61,7 @@
 		81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = LaunchScreen.storyboard; path = Koru/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		85126A0B7D214E94B1978F5D /* Manrope-Regular.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = "Manrope-Regular.ttf"; path = "../assets/fonts/Manrope-Regular.ttf"; sourceTree = "<group>"; };
 		89C6BE57DB24E9ADA2F236DE /* Pods-Koru-KoruTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Koru-KoruTests.release.xcconfig"; path = "Target Support Files/Pods-Koru-KoruTests/Pods-Koru-KoruTests.release.xcconfig"; sourceTree = "<group>"; };
+		89FDE1DBA9203CF77F76E21D /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; name = PrivacyInfo.xcprivacy; path = Koru/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		942825DBE9E94BB8BC52E491 /* Manrope-Medium.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = "Manrope-Medium.ttf"; path = "../assets/fonts/Manrope-Medium.ttf"; sourceTree = "<group>"; };
 		AC30A9420E9740B486D18707 /* Archivo-ExtraBold.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = "Archivo-ExtraBold.ttf"; path = "../assets/fonts/Archivo-ExtraBold.ttf"; sourceTree = "<group>"; };
 		CD0DD2A49EAE4DB9A52AE7F7 /* Colors.xcassets */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = folder.assetcatalog; name = Colors.xcassets; path = Koru/Colors.xcassets; sourceTree = "<group>"; };
@@ -114,6 +116,7 @@
 				13B07FB71A68108700A75B9A /* main.m */,
 				2B6D2501012344F29A547755 /* BootSplash.storyboard */,
 				CD0DD2A49EAE4DB9A52AE7F7 /* Colors.xcassets */,
+				89FDE1DBA9203CF77F76E21D /* PrivacyInfo.xcprivacy */,
 			);
 			name = Koru;
 			sourceTree = "<group>";
@@ -292,6 +295,7 @@
 				F50C4EA5A19D490FB4AD05DD /* JetBrainsMono-Medium.ttf in Resources */,
 				F63C400DF7DF4F18B380F280 /* BootSplash.storyboard in Resources */,
 				CFC469E65687438F8755F211 /* Colors.xcassets in Resources */,
+				F9E9F10CF515F275B880E892 /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -467,7 +471,7 @@
 					"$(inherited)",
 				);
 				INFOPLIST_FILE = KoruTests/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 13.4;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -491,7 +495,7 @@
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				COPY_PHASE_STRIP = NO;
 				INFOPLIST_FILE = KoruTests/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 13.4;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -527,7 +531,7 @@
 					"-ObjC",
 					"-lc++",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.koru;
+				PRODUCT_BUNDLE_IDENTIFIER = com.koru.ok;
 				PRODUCT_NAME = Koru;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
@@ -553,7 +557,7 @@
 					"-ObjC",
 					"-lc++",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.koru;
+				PRODUCT_BUNDLE_IDENTIFIER = com.koru.ok;
 				PRODUCT_NAME = Koru;
 				SWIFT_VERSION = 5.0;
 				VERSIONING_SYSTEM = "apple-generic";
@@ -609,7 +613,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 13.4;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
 				LD_RUNPATH_SEARCH_PATHS = (
 					/usr/lib/swift,
 					"$(inherited)",
@@ -635,6 +639,7 @@
 				);
 				REACT_NATIVE_PATH = "${PODS_ROOT}/../../node_modules/react-native";
 				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) DEBUG";
 				USE_HERMES = true;
 			};
 			name = Debug;
@@ -681,7 +686,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 13.4;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
 				LD_RUNPATH_SEARCH_PATHS = (
 					/usr/lib/swift,
 					"$(inherited)",

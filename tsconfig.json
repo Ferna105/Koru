@@ -2,7 +2,9 @@
   "extends": "@react-native/typescript-config/tsconfig.json",
   "compilerOptions": {
     "baseUrl": ".",
-    "skipLibCheck": false, /* Skip type checking all .d.ts files. */
+    /* true (default de RN): los .d.ts del ecosistema 0.81 no chequean limpio
+       entre sí y ahogaban los errores del código propio. */
+    "skipLibCheck": true,
     "jsx": "react",
     "paths": {
       "*": [
@@ -15,5 +17,7 @@
         "src/components/*",
       ],
     },
-  }
+  },
+  "include": ["**/*.ts", "**/*.tsx"],
+  "exclude": ["**/node_modules", "**/Pods"]
 }

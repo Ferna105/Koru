@@ -10,8 +10,12 @@ import App from '../App';
 import {it} from '@jest/globals';
 
 // Note: test renderer must be required after react-native.
-import renderer from 'react-test-renderer';
+import {act, create} from 'react-test-renderer';
 
-it('renders correctly', () => {
-  renderer.create(<App />);
+it('renders correctly', async () => {
+  // `act` async: AuthProvider/UserProvider hidratan desde AsyncStorage en un
+  // efecto, y sin esperarlo el estado se actualiza con el entorno ya destruido.
+  await act(async () => {
+    create(<App />);
+  });
 });

@@ -20,8 +20,6 @@
 	<string>$(MARKETING_VERSION)</string>
 	<key>CFBundleSignature</key>
 	<string>????</string>
-	<key>CFBundleVersion</key>
-	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>
@@ -29,12 +27,12 @@
 			<string>Editor</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<!-- Reversed iOS client ID de Google: tiene que coincidir con
-				     GOOGLE_IOS_CLIENT_ID en src/config/google.config.ts. -->
 				<string>com.googleusercontent.apps.750626947997-bl008hifetsn1cao7cqroi8oih0bqt37</string>
 			</array>
 		</dict>
 	</array>
+	<key>CFBundleVersion</key>
+	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>LSApplicationQueriesSchemes</key>
 	<array>
 		<string>instagram</string>
@@ -50,12 +48,25 @@
 	</dict>
 	<key>NSCameraUsageDescription</key>
 	<string>Koru necesita acceder a la cámara para grabar tus tests físicos.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string></string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>El audio se graba junto al video del test.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>Koru puede guardar el video de tu test en la galería.</string>
-	<key>NSLocationWhenInUseUsageDescription</key>
-	<string></string>
+	<key>RCTNewArchEnabled</key>
+	<false/>
+	<key>UIAppFonts</key>
+	<array>
+		<string>Archivo-Bold.ttf</string>
+		<string>Archivo-ExtraBold.ttf</string>
+		<string>Archivo-Black.ttf</string>
+		<string>Manrope-Regular.ttf</string>
+		<string>Manrope-Medium.ttf</string>
+		<string>Manrope-SemiBold.ttf</string>
+		<string>Manrope-Bold.ttf</string>
+		<string>JetBrainsMono-Medium.ttf</string>
+	</array>
 	<key>UILaunchStoryboardName</key>
 	<string>BootSplash</string>
 	<key>UIRequiredDeviceCapabilities</key>
@@ -70,16 +81,5 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<false/>
-	<key>UIAppFonts</key>
-	<array>
-		<string>Archivo-Bold.ttf</string>
-		<string>Archivo-ExtraBold.ttf</string>
-		<string>Archivo-Black.ttf</string>
-		<string>Manrope-Regular.ttf</string>
-		<string>Manrope-Medium.ttf</string>
-		<string>Manrope-SemiBold.ttf</string>
-		<string>Manrope-Bold.ttf</string>
-		<string>JetBrainsMono-Medium.ttf</string>
-	</array>
 </dict>
 </plist>

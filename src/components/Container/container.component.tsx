@@ -1,11 +1,9 @@
 import React, { ReactNode } from 'react';
-import {
-  SafeAreaView,
-  ScrollView,
-  StyleProp,
-  View,
-  ViewStyle,
-} from 'react-native';
+import { ScrollView, StyleProp, View, ViewStyle } from 'react-native';
+// El SafeAreaView de react-native es no-op en Android y está deprecado; con
+// targetSdk 36 Android 16 dibuja edge-to-edge, así que los insets tienen que
+// salir de safe-area-context para que la UI no quede bajo las barras.
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from 'design-system';
 import { Tokens } from 'design-system';
 import { styles } from './container.styles';

@@ -7,14 +7,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `yarn start` — start Metro bundler.
 - `yarn ios` / `yarn android` — build & run on simulator/emulator. iOS requires `bundle exec pod install` from `ios/` after dep changes.
 - `yarn lint` — ESLint (`@react-native` config).
+- `yarn build:android` — AAB firmado de release para Play Store (`yarn build:android:apk` para un APK). Requiere `android/keystore.properties`; ver `RELEASE.md`.
 - `yarn test` — Jest with the `react-native` preset. Run a single test with `yarn test path/to/file.test.tsx` or `yarn test -t "name pattern"`.
 - Type-check: `npx tsc --noEmit` (no script alias).
 
-Node ≥ 18 is required (`engines.node`).
+Node ≥ 20 is required (`engines.node`).
 
 ## Architecture
 
-React Native 0.73 + TypeScript app. Single feature shipped today: **Koru Test de Salto** (vertical jump measurement via slow-motion video). `PLAN.md` is the source of truth for the feature's design decisions, phases, and physics; consult it before changing anything inside `src/screens/private/tests/jumpTest/` or `src/services/tests/`.
+React Native 0.81 + TypeScript app (old architecture: `newArchEnabled=false`). Single feature shipped today: **Koru Test de Salto** (vertical jump measurement via slow-motion video). `PLAN.md` is the source of truth for the feature's design decisions, phases, and physics; consult it before changing anything inside `src/screens/private/tests/jumpTest/` or `src/services/tests/`.
 
 ### Provider pyramid (`App.tsx`)
 
@@ -79,3 +80,12 @@ Both `babel.config.js` (module-resolver) and `tsconfig.json` (paths) treat `src/
 - Physics + formatting helpers for the jump test live in `src/screens/private/tests/jumpTest/jumpTest.physics.ts` (`airtimeToHeightCm`, `formatMs`). Do not inline `g = 9.80665` elsewhere.
 - The Editor screen owns temp-MP4 cleanup via a `consumedRef` + `navigation.addListener('beforeRemove', …)`. If you add a new exit path from Editor, decide explicitly whether the file was "consumed" (moved by `persistVideo`) or should be deleted.
 - The Result screen guards auto-persistence with `persistedRef` (StrictMode safety) and skips persistence entirely when navigated with a `recordId` param (re-opening from history). Maintain both guards if you touch that effect.
+- El `applicationId` de Android y el bundle de iOS son **`com.koru.ok`** (`com.koru` ya estaba tomado en Play Store). El `namespace` de Gradle sigue siendo `com.koru`, así que la activity se lanza como `com.koru.ok/com.koru.MainActivity`.
+- Android apunta a `compileSdk`/`targetSdk` 36 porque Play lo exige para apps nuevas desde el 31/8/2026. Bajarlo hace que Play rechace el AAB.
+- Dos librerías están clavadas a la versión contemporánea de RN 0.81; las posteriores apuntan a 0.82+ y rompen. Suben recién cuando suba React Native:
+  - `react-native-screens` en **4.16.0** — de 4.17 en adelante su spec de Fabric usa una sintaxis que el codegen de 0.81 no parsea (`The first argument of method blur must be of type React.ElementRef<>`), y falla el bundle de Metro.
+  - `react-native-gesture-handler` en **2.28.0** — 2.29 llama a `sendEventForDirectEvent:` en `RNGestureHandlerManager.mm`, que no existe en la arquitectura vieja, y no compila en iOS.
+- Ambas plataformas corren en la **arquitectura vieja**. Android por `newArchEnabled=false`; iOS necesita `ENV['RCT_NEW_ARCH_ENABLED'] = '0'` en el `Podfile` porque RN 0.81 activa la New Architecture por defecto en iOS. Si se migra, hay que hacerlo en las dos a la vez.
+- El `Podfile` marca `GoogleUtilities` y `RecaptchaInterop` con `:modular_headers => true`: GoogleSignIn 9 arrastra AppCheckCore (Swift), que no puede importarlos sin module map al linkear estático, y `pod install` aborta.
+- El release se firma con `android/app/koru-upload.keystore` + `android/keystore.properties`, ninguno versionado. Si faltan, `bundleRelease` cae al keystore de debug y avisa por consola. Todo el flujo de publicación está en `RELEASE.md`.
+- Los mocks de módulos nativos para Jest viven en `jest.setup.js`; los `.svg` se mapean a `__mocks__/svgMock.js` porque `react-native-svg-transformer` es un transformer de Metro y no corre bajo Jest.

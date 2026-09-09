@@ -38,32 +38,49 @@ GitHub Pages desde `docs/` (rama `main`):
 | Tipo            | Nombre en la consola   | Identificado por                    | Se usa en                                        |
 | --------------- | ---------------------- | ----------------------------------- | ------------------------------------------------ |
 | Aplicación web  | `Koru Web (idToken)`   | —                                   | `GOOGLE_WEB_CLIENT_ID` (Android + idToken)       |
-| iOS             | `Koru iOS`             | Bundle ID `com.koru`                | `GOOGLE_IOS_CLIENT_ID` + URL scheme del Info.plist |
-| Android         | `Koru Android (debug)` | Package `com.koru` + SHA-1 de debug | Nada en JS: Google lo resuelve por package+SHA-1 |
+| iOS             | `Koru iOS`             | Bundle ID `com.koru.ok`             | `GOOGLE_IOS_CLIENT_ID` + URL scheme del Info.plist |
+| Android         | `Koru Android (debug)` | Package `com.koru.ok` + SHA-1 de debug | Nada en JS: Google lo resuelve por package+SHA-1 |
+| Android         | `Koru Android (upload)`| Package `com.koru.ok` + SHA-1 de upload | Nada en JS: ídem |
 
 Los IDs concretos están en `src/config/google.config.ts` y en
 `ios/Koru/Info.plist` (reversed client ID). El *client secret* del client web no
 se usa en la app: el flujo nativo no lo necesita.
 
-### SHA-1 registrada (Android)
+### SHA-1 registradas (Android)
 
-`5E:8F:16:06:2E:A3:CD:2C:4A:0D:54:78:76:BA:A6:F3:8C:AB:F6:25`
+Google resuelve el login de Android por **package name + SHA-1**, así que cada
+clave que firme la app necesita su propio client de Android en la consola.
 
-Sale del keystore versionado en el repo, `android/app/debug.keystore`, que hoy
-firma **debug y release** (ver `signingConfigs` en `android/app/build.gradle`):
+> El package es **`com.koru.ok`** (no `com.koru`, que ya estaba tomado en Play
+> Store). Los tres clients se editaron para reflejarlo, así que los client IDs
+> siguen siendo los mismos que están en `google.config.ts`.
+
+| Clave | SHA-1 | Estado |
+| --- | --- | --- |
+| Debug (`android/app/debug.keystore`, versionado) | `5E:8F:16:06:2E:A3:CD:2C:4A:0D:54:78:76:BA:A6:F3:8C:AB:F6:25` | Registrada |
+| Upload (`android/app/koru-upload.keystore`, fuera de git) | `60:41:34:01:79:84:C4:01:83:B9:BD:AD:14:D8:FF:9B:F2:C2:2F:05` | Registrada (client `Koru Android (upload)`, 8 sept 2026) |
+| Play App Signing | la genera Google al subir el primer AAB | **Falta registrar** |
+
+Para releerlas:
 
 ```sh
 keytool -list -v -keystore android/app/debug.keystore \
   -alias androiddebugkey -storepass android -keypass android
+keytool -list -v -keystore android/app/koru-upload.keystore -alias koru-upload
 ```
 
-Cuando se genere el keystore real de release —o si se usa Play App Signing—
-hay que **agregar esa segunda SHA-1** como client de Android adicional, o el
-login falla solo en los builds firmados de producción.
+La de Play App Signing sale de Play Console → *Prueba y versiones* → *Firma de
+aplicaciones*, recién después de la primera subida. Es la que firma el APK que
+llega a los usuarios, así que sin ella **el login falla en producción aunque
+ande en debug y en el AAB local**.
 
 ## Pendientes
 
-- Registrar la SHA-1 del keystore de release cuando exista (ver arriba).
+- Registrar la SHA-1 de Play App Signing después de subir el primer AAB. Es la
+  única que falta, y sin ella el login falla para los usuarios que instalen
+  desde Play aunque ande en debug y en el AAB local.
+
+Ver `RELEASE.md` para el flujo completo de publicación.
 
 ## Rebuild nativo
 
