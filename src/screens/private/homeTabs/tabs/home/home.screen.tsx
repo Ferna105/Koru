@@ -1,12 +1,13 @@
 import React from 'react';
 import { View } from 'react-native';
-import { Card, Container, Icon, Text, TopBar } from 'components';
+import { Card, Container, Icon, InfoPanel, Text, TopBar } from 'components';
 import { styles } from './home.styles';
 import { HomeTabScreenProps } from 'navigation/types';
+import { EXPLOSIVENESS_PITCH } from 'config/app.config';
 
 export const Home = ({ navigation }: HomeTabScreenProps<'Home'>) => {
   return (
-    <Container variant="base" noPadding>
+    <Container variant="base" noPadding scrollable>
       <TopBar title="Inicio" />
       <View style={styles.content}>
         <Text variant="overline" tone="tertiary">
@@ -42,6 +43,12 @@ export const Home = ({ navigation }: HomeTabScreenProps<'Home'>) => {
             <Icon name="ChevronRight" size="L" />
           </View>
         </Card>
+
+        <InfoPanel
+          title={EXPLOSIVENESS_PITCH.title}
+          body={EXPLOSIVENESS_PITCH.body}
+          closing={EXPLOSIVENESS_PITCH.closing}
+        />
       </View>
     </Container>
   );

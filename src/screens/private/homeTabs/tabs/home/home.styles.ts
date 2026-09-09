@@ -3,9 +3,9 @@ import { tokens } from 'design-system';
 
 export const styles = StyleSheet.create({
   content: {
-    flex: 1,
     paddingHorizontal: tokens.layout.screenPadding,
     paddingTop: tokens.spacing.lg,
+    paddingBottom: tokens.spacing['3xl'],
     gap: tokens.spacing.lg,
   },
   tile: {

@@ -24,6 +24,27 @@ export const APP_FEATURES: {
   { icon: 'Share', text: 'Compartí el clip recortado de tu mejor intento.' },
 ];
 
+/**
+ * Bloque explicativo de la Home ("por qué medir el salto"). Vive acá y no en la
+ * pantalla porque es copy estático, igual que APP_DESCRIPTION.
+ */
+export const EXPLOSIVENESS_PITCH: {
+  title: string[];
+  body: string[];
+  closing: string;
+} = {
+  title: ['Medí tu explosividad.', 'Mejorá tu rendimiento.'],
+  body: [
+    'Saltar alto no es solo saltar. Es la capacidad de generar mucha fuerza ' +
+      'en muy poco tiempo. Esa explosividad se refleja en acciones decisivas ' +
+      'del deporte: acelerar, saltar, cambiar de dirección y reaccionar más ' +
+      'rápido.',
+    'Medir tu salto te da un número real para saber dónde estás hoy, seguir ' +
+      'tu progreso y comprobar si tu entrenamiento está funcionando.',
+  ],
+  closing: 'Medí. Entrená. Superá tu marca.',
+};
+
 export const CONTACT_INSTAGRAM_HANDLE = 'pedropalacios.ok';
 export const CONTACT_INSTAGRAM_URL =
   'https://www.instagram.com/pedropalacios.ok';

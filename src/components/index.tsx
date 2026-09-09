@@ -23,6 +23,7 @@ export { ListItem } from './ListItem/listItem.component';
 export { Table } from './Table/table.component';
 export type { TableColumn } from './Table/table.component';
 export { Empty } from './Empty/empty.component';
+export { InfoPanel } from './InfoPanel/infoPanel.component';
 
 // Overlays.
 export { Modal } from './Modal/modal.component';
