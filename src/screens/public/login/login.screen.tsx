@@ -45,7 +45,7 @@ export const Login = ({}: RootStackScreenProps<'Login'>) => {
       <View style={styles.brand}>
         <Logo size={64} />
         <Text variant="bodyMD" tone="secondary" style={styles.tagline}>
-          Mide. Entrena. Repetí.
+          Medí. Entrená. Repetí.
         </Text>
       </View>
 
