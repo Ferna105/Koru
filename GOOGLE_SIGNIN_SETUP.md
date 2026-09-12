@@ -59,7 +59,7 @@ clave que firme la app necesita su propio client de Android en la consola.
 | --- | --- | --- |
 | Debug (`android/app/debug.keystore`, versionado) | `5E:8F:16:06:2E:A3:CD:2C:4A:0D:54:78:76:BA:A6:F3:8C:AB:F6:25` | Registrada |
 | Upload (`android/app/koru-upload.keystore`, fuera de git) | `60:41:34:01:79:84:C4:01:83:B9:BD:AD:14:D8:FF:9B:F2:C2:2F:05` | Registrada (client `Koru Android (upload)`, 8 sept 2026) |
-| Play App Signing | la genera Google al subir el primer AAB | **Falta registrar** |
+| Play App Signing | `1F:93:26:39:76:AE:54:F9:38:B8:19:D4:7E:06:9F:8D:18:6D:6C:14` | Registrada (client `Koru Android (Play App Signing)`, 12 sept 2026) |
 
 Para releerlas:
 
@@ -76,9 +76,14 @@ ande en debug y en el AAB local**.
 
 ## Pendientes
 
-- Registrar la SHA-1 de Play App Signing después de subir el primer AAB. Es la
-  única que falta, y sin ella el login falla para los usuarios que instalen
-  desde Play aunque ande en debug y en el AAB local.
+Ninguno: las tres SHA-1 (debug, upload y Play App Signing) están registradas.
+
+> **Síntoma si falta alguna:** el login devuelve `DEVELOPER_ERROR` (código 10).
+> Pasó al publicar la primera versión: la app andaba en debug y con el APK
+> firmado con la clave de subida, pero fallaba al instalarla desde Play, porque
+> Play App Signing re-firma el APK con **otra** clave. La SHA-1 de Play sale de
+> Play Console → *Protegida con Play* → *Firma de aplicaciones*, y no es la
+> misma que la de subida.
 
 Ver `RELEASE.md` para el flujo completo de publicación.
 

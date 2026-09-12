@@ -73,11 +73,13 @@ Hay que registrar **dos** huellas, no una:
 
 1. **La clave de upload** — ✅ ya registrada como client `Koru Android (upload)`
    (creado el 8/9/2026, package `com.koru.ok`, con la SHA-1 de arriba).
-2. **La clave de firma de app** — ⏳ **pendiente**. La genera Play App Signing y
-   recién existe después de subir el primer AAB: sale de Play Console →
-   *Prueba y versiones* → *Firma de aplicaciones*. Es la que firma el APK que
-   instalan los usuarios, así que **es la que realmente importa**: sin ella el
-   login con Google falla para todo el que instale desde Play.
+2. **La clave de firma de app** — ✅ registrada como `Koru Android (Play App
+   Signing)` (12/9/2026), SHA-1 `1F:93:26:39:76:AE:54:F9:38:B8:19:D4:7E:06:9F:8D:18:6D:6C:14`.
+   Es la que firma el APK que instalan los usuarios y **no es la misma que la de
+   subida**: sale de Play Console → *Protegida con Play* → *Firma de
+   aplicaciones*. Sin ella el login con Google falla solo en producción, con
+   `DEVELOPER_ERROR` (código 10) — que es exactamente lo que pasó con la primera
+   versión publicada.
 
 Se registra en Google Cloud Console → *Credenciales* → *Crear credenciales* →
 *ID de cliente de OAuth* → Android, package `com.koru.ok` + la SHA-1. El client ID

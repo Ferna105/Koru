@@ -4,8 +4,37 @@ import { Button, Container, Logo, Text } from 'components';
 import { AuthContext } from 'contexts/auth.context';
 import { UserContext } from 'contexts/user.context';
 import { googleService } from 'services/google/google.services';
+import { GoogleSignInErrorReason } from 'services/google/google.services.interfaces';
 import { RootStackScreenProps } from 'navigation/types';
 import { styles } from './login.styles';
+
+/**
+ * Cada causa necesita una acción distinta: reintentar solo sirve si fue la red.
+ * Si la firma del build no coincide con el client de OAuth no hay nada que la
+ * persona usuaria pueda hacer, así que no le pedimos que revise la conexión.
+ */
+const messageForError = (
+  reason: GoogleSignInErrorReason,
+): [title: string, body: string] => {
+  switch (reason) {
+    case 'SIGNING_MISMATCH':
+      return [
+        'No pudimos iniciar sesión',
+        'Esta versión de la app tiene un problema de configuración con Google. ' +
+          'Actualizala desde Play Store; si sigue pasando, escribinos.',
+      ];
+    case 'PLAY_SERVICES':
+      return [
+        'Falta Google Play Services',
+        'Actualizá o instalá Google Play Services para poder iniciar sesión.',
+      ];
+    default:
+      return [
+        'No pudimos iniciar sesión',
+        'Revisá tu conexión y volvé a intentar.',
+      ];
+  }
+};
 
 export const Login = ({}: RootStackScreenProps<'Login'>) => {
   const { setAuthToken } = useContext(AuthContext);
@@ -33,10 +62,7 @@ export const Login = ({}: RootStackScreenProps<'Login'>) => {
         );
         break;
       default:
-        Alert.alert(
-          'No pudimos iniciar sesión',
-          'Revisá tu conexión y volvé a intentar.',
-        );
+        Alert.alert(...messageForError(result.reason));
     }
   };
 
