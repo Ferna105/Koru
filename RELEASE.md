@@ -155,10 +155,26 @@ envío a revisión— corre con un comando:
 bundle exec fastlane android release version:1.0.3
 ```
 
-### Puesta a punto (una sola vez)
+### Puesta a punto (una sola vez) — ✅ hecha el 12/9/2026
 
 fastlane habla con la Play Developer API mediante una **cuenta de servicio**. Sin
-esa clave no puede subir nada.
+esa clave no puede subir nada. Ya está configurada:
+
+- Cuenta: **`fastlane-play-publisher@koru-507923.iam.gserviceaccount.com`**
+- Clave JSON en **`fastlane/play-store-key.json`** (fuera de git, permisos `600`).
+  **No hay backup**: si se pierde, se genera una clave nueva desde Cloud Console
+  y se borra la vieja.
+- **Google Play Android Developer API** habilitada en el proyecto `koru-507923`.
+- En Play Console la cuenta figura como usuario activo con permisos sobre
+  **Koru — Test de Salto** únicamente: *Ver información de la aplicación*,
+  *Ver información sobre la calidad* y ***Lanzar aplicaciones en canales de
+  pruebas***. **No** tiene *Lanzar a producción* — hay que tildarlo cuando
+  producción se desbloquee.
+
+Verificación: `bundle exec fastlane android validate_key` →
+*"Successfully established connection to Google Play Store"*.
+
+Los pasos, por si hay que rehacerlo:
 
 1. **Google Cloud Console** (proyecto `koru-507923`) → *IAM y administración* →
    *Cuentas de servicio* → **Crear cuenta de servicio**. No hace falta darle
@@ -168,14 +184,16 @@ esa clave no puede subir nada.
 3. Guardalo como **`fastlane/play-store-key.json`**. Está en `.gitignore` a
    propósito: esa clave puede publicar versiones de la app, tratala como el
    keystore. Si preferís otra ruta, exportá `SUPPLY_JSON_KEY_FILE`.
-4. **Play Console** → *Usuarios y permisos* → *Invitar a un usuario* → pegá el
+4. Habilitá la **Google Play Android Developer API** en el proyecto:
+   <https://console.cloud.google.com/apis/library/androidpublisher.googleapis.com>.
+   Sin esto la clave autentica pero la API responde 403.
+5. **Play Console** → *Usuarios y permisos* → *Invitar a un usuario* → pegá el
    email de la cuenta de servicio (`...@koru-507923.iam.gserviceaccount.com`) →
-   en *Permisos de la app* agregá **Koru — Test de Salto** y tildá:
-   - *Ver información de la app*
-   - *Crear y editar versiones en borrador*
-   - *Publicar en canales de prueba* (y *Publicar versiones de producción*
-     cuando producción se desbloquee)
-5. Verificá que quedó bien:
+   en *Permisos de la app* agregá **Koru — Test de Salto** y tildá *Lanzar
+   aplicaciones en canales de pruebas* (y *Lanzar a producción...* cuando
+   producción se desbloquee). Las cuentas de servicio no aceptan invitación:
+   quedan **Activo** al toque.
+6. Verificá que quedó bien:
 
    ```sh
    bundle exec fastlane android validate_key
@@ -200,9 +218,11 @@ Opciones de `release`: `build:`, `track:`, `notes:`, `skip_checks:true`,
 ### Detalles que importan
 
 - **El canal por defecto es `alpha`**, que es *Prueba cerrada - Alpha*.
-  Producción sigue bloqueada hasta cumplir el requisito de 12 testers / 14 días,
-  así que `promote ... to:production` va a fallar hasta entonces. Si alguna vez
-  el nombre del track no matchea, `supply` lista los válidos en el error.
+  Verificado contra la API: `google_play_track_version_codes track:alpha` devuelve
+  el versionCode publicado. Producción sigue bloqueada hasta cumplir el requisito
+  de 12 testers / 14 días, así que `promote ... to:production` va a fallar hasta
+  entonces (y además falta el permiso en la cuenta de servicio). Si alguna vez el
+  nombre del track no matchea, `supply` lista los válidos en el error.
 - **Las notas de la versión** van a
   `fastlane/metadata/android/es-419/changelogs/<versionCode>.txt`. `upload` lo
   escribe solo a partir de `notes:` (por defecto *"Mejoras de estabilidad y
@@ -218,3 +238,10 @@ Opciones de `release`: `build:`, `track:`, `notes:`, `skip_checks:true`,
   clavado en 2.231.1, que es la última que lo soporta. fastlane ya avisa que va a
   pedir Ruby ≥ 3.2; cuando eso pase hay que instalar un Ruby moderno con rbenv y
   correr `bundle update fastlane`.
+
+### Skill de Claude Code
+
+`.claude/skills/release/SKILL.md` envuelve todo esto para poder pedirlo en
+lenguaje natural ("sacá la 1.0.3 y dejala subida"). Incluye las precondiciones,
+la tabla de errores comunes y el estado de los canales. Si cambia el flujo de
+release, **actualizá la skill junto con este documento**.

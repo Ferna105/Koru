@@ -71,3 +71,6 @@ fastlane/play-store-key.json
 
 # testing
 /coverage
+
+# Ajustes locales de Claude Code (permisos por máquina, no del proyecto)
+.claude/settings.local.json
