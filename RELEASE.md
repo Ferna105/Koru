@@ -61,7 +61,7 @@ Los cuatro valores se mantienen a mano y tienen que coincidir:
 | `ios/Koru.xcodeproj` | `CURRENT_PROJECT_VERSION` / `MARKETING_VERSION` |
 | `src/config/app.config.ts` | `APP_BUILD` / `APP_VERSION` |
 
-Hoy: `versionName 1.0`, `versionCode 1`.
+Hoy: `versionName 1.0.2`, `versionCode 3`.
 
 ## 4. Google Sign-In en producción
 

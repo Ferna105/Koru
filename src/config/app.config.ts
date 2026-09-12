@@ -3,8 +3,8 @@
 // APP_VERSION / APP_BUILD tienen que acompañar a los valores nativos:
 //   iOS      → MARKETING_VERSION / CURRENT_PROJECT_VERSION (Koru.xcodeproj)
 //   Android  → versionName / versionCode (android/app/build.gradle)
-export const APP_VERSION = '1.0.1';
-export const APP_BUILD = '2';
+export const APP_VERSION = '1.0.2';
+export const APP_BUILD = '3';
 
 export const APP_DESCRIPTION =
   'Koru mide tu salto vertical con la cámara del teléfono. Grabás el salto en ' +
