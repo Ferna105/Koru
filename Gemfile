@@ -14,3 +14,6 @@ gem 'bigdecimal'
 gem 'logger'
 gem 'benchmark'
 gem 'mutex_m'
+
+# Automatización de releases (ver RELEASE.md). `bundle exec fastlane android ...`
+gem 'fastlane'

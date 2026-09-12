@@ -1,0 +1,255 @@
+# Automatización del release de Android (ver RELEASE.md).
+#
+#   bundle exec fastlane android release version:1.0.3
+#
+# hace el bump de los cuatro valores de versión, corre los checks, genera el AAB
+# firmado, lo sube al canal de prueba cerrada y lo manda a revisión.
+
+default_platform(:android)
+
+# fastlane evalúa este archivo con el cwd en `fastlane/` y sin una constante de
+# ruta confiable, así que anclamos subiendo hasta encontrar el package.json.
+def self.project_root
+  dir = File.expand_path(Dir.pwd)
+  10.times do
+    return dir if File.exist?(File.join(dir, 'package.json'))
+    parent = File.dirname(dir)
+    break if parent == dir
+    dir = parent
+  end
+  UI.user_error!("No encontré la raíz del proyecto (ningún package.json hacia arriba desde #{Dir.pwd}).")
+end
+
+ROOT = project_root
+FASTLANE_DIR = File.join(ROOT, 'fastlane')
+METADATA_DIR = File.join(FASTLANE_DIR, 'metadata/android')
+
+GRADLE_FILE     = File.join(ROOT, 'android/app/build.gradle')
+PBXPROJ_FILE    = File.join(ROOT, 'ios/Koru.xcodeproj/project.pbxproj')
+APP_CONFIG_FILE = File.join(ROOT, 'src/config/app.config.ts')
+RELEASE_DOC     = File.join(ROOT, 'RELEASE.md')
+
+KEYSTORE_PROPERTIES = File.join(ROOT, 'android/keystore.properties')
+AAB_PATH = File.join(ROOT, 'android/app/build/outputs/bundle/release/app-release.aab')
+
+# El canal de prueba cerrada "Alpha" es el track `alpha` de la API. Producción
+# sigue bloqueada hasta cumplir el requisito de 12 testers / 14 días, así que
+# este es el destino por defecto.
+DEFAULT_TRACK = 'alpha'
+
+# Locale de las notas de la versión en Play (el único que tiene la ficha hoy).
+CHANGELOG_LOCALE = 'es-419'
+DEFAULT_NOTES = 'Mejoras de estabilidad y correcciones menores.'
+
+# --- Versionado --------------------------------------------------------------
+#
+# RELEASE.md §3: los cuatro valores se mantienen a mano y tienen que coincidir.
+# Estos helpers son la única fuente de verdad de dónde vive cada uno; si aparece
+# un quinto lugar, se agrega acá y en la tabla de RELEASE.md.
+
+VERSION_NAME_PATTERNS = {
+  GRADLE_FILE     => [/versionName\s+"[^"]+"/,            ->(v) { %(versionName "#{v}") }],
+  PBXPROJ_FILE    => [/MARKETING_VERSION = [0-9.]+;/,     ->(v) { "MARKETING_VERSION = #{v};" }],
+  APP_CONFIG_FILE => [/export const APP_VERSION = '[^']+';/, ->(v) { "export const APP_VERSION = '#{v}';" }],
+}.freeze
+
+VERSION_CODE_PATTERNS = {
+  GRADLE_FILE     => [/versionCode\s+\d+/,                ->(c) { "versionCode #{c}" }],
+  PBXPROJ_FILE    => [/CURRENT_PROJECT_VERSION = \d+;/,   ->(c) { "CURRENT_PROJECT_VERSION = #{c};" }],
+  APP_CONFIG_FILE => [/export const APP_BUILD = '[^']+';/, ->(c) { "export const APP_BUILD = '#{c}';" }],
+}.freeze
+
+def current_version_name
+  File.read(GRADLE_FILE)[/versionName\s+"([^"]+)"/, 1]
+end
+
+def current_version_code
+  File.read(GRADLE_FILE)[/versionCode\s+(\d+)/, 1].to_i
+end
+
+# Reemplaza en el lugar y explota si el patrón no matcheó: preferimos romper el
+# release antes que publicar un AAB con la versión a medio actualizar.
+def replace_in_file!(path, pattern, replacement)
+  content = File.read(path)
+  matches = content.scan(pattern).size
+  if matches.zero?
+    UI.user_error!("No encontré el patrón #{pattern.inspect} en #{path}. " \
+                   'Cambió el formato del archivo: actualizá los patrones del Fastfile.')
+  end
+  File.write(path, content.gsub(pattern, replacement))
+  matches
+end
+
+def write_version!(name, code)
+  VERSION_NAME_PATTERNS.each do |path, (pattern, build)|
+    replace_in_file!(path, pattern, build.call(name))
+  end
+  VERSION_CODE_PATTERNS.each do |path, (pattern, build)|
+    replace_in_file!(path, pattern, build.call(code))
+  end
+  replace_in_file!(
+    RELEASE_DOC,
+    /Hoy: `versionName [^`]+`, `versionCode \d+`\./,
+    "Hoy: `versionName #{name}`, `versionCode #{code}`."
+  )
+end
+
+def json_key_path
+  path = ENV['SUPPLY_JSON_KEY_FILE'] || File.join(FASTLANE_DIR, 'play-store-key.json')
+  unless File.exist?(path)
+    UI.user_error!(
+      "Falta la clave de servicio de Play en #{path}.\n" \
+      'Generala siguiendo RELEASE.md §8 y dejala ahí (está en .gitignore), ' \
+      'o apuntá SUPPLY_JSON_KEY_FILE a otra ruta.'
+    )
+  end
+  path
+end
+
+def write_changelog!(code, notes)
+  dir = File.join(METADATA_DIR, CHANGELOG_LOCALE, 'changelogs')
+  FileUtils.mkdir_p(dir)
+  File.write(File.join(dir, "#{code}.txt"), "#{notes}\n")
+end
+
+platform :android do
+  desc 'Muestra la versión actual y verifica que los cuatro lugares coincidan'
+  lane :version do
+    name = current_version_name
+    code = current_version_code
+
+    mismatches = []
+    VERSION_NAME_PATTERNS.each do |path, (pattern, build)|
+      expected = build.call(name)
+      mismatches << "#{path} (esperaba #{expected.inspect})" unless File.read(path).include?(expected)
+    end
+    VERSION_CODE_PATTERNS.each do |path, (pattern, build)|
+      expected = build.call(code)
+      mismatches << "#{path} (esperaba #{expected.inspect})" unless File.read(path).include?(expected)
+    end
+
+    if mismatches.empty?
+      UI.success("Versión #{name} (#{code}) — los cuatro lugares coinciden.")
+    else
+      UI.user_error!("La versión está desincronizada:\n- #{mismatches.join("\n- ")}")
+    end
+
+    { version_name: name, version_code: code }
+  end
+
+  desc 'Sube versionName/versionCode en los cuatro lugares. Uso: bump version:1.0.3 [build:5]'
+  lane :bump do |options|
+    name = options[:version] || current_version_name
+    code = (options[:build] || current_version_code + 1).to_i
+
+    if code <= current_version_code && options[:build].nil?
+      UI.user_error!("El versionCode #{code} no es mayor al actual (#{current_version_code}).")
+    end
+
+    write_version!(name, code)
+    UI.success("Versión: #{name} (#{code})")
+    { version_name: name, version_code: code }
+  end
+
+  desc 'Type-check, lint y tests'
+  lane :check do
+    Dir.chdir(ROOT) do
+      sh('npx tsc --noEmit')
+      sh('yarn lint')
+      sh('yarn test')
+    end
+  end
+
+  desc 'Genera el AAB firmado de release'
+  lane :build do
+    unless File.exist?(KEYSTORE_PROPERTIES)
+      UI.user_error!(
+        "Falta #{KEYSTORE_PROPERTIES}. Sin ese archivo Gradle firma con el keystore " \
+        'de debug y el AAB no se puede subir a Play (RELEASE.md §1).'
+      )
+    end
+
+    gradle(task: 'bundle', build_type: 'Release', project_dir: 'android/')
+    UI.success("AAB: #{AAB_PATH}")
+    AAB_PATH
+  end
+
+  desc 'Sube el AAB ya generado a Play. Uso: upload [track:alpha] [notes:"..."]'
+  lane :upload do |options|
+    UI.user_error!("No existe #{AAB_PATH}. Corré `fastlane android build` primero.") unless File.exist?(AAB_PATH)
+
+    code = current_version_code
+    write_changelog!(code, options[:notes] || DEFAULT_NOTES)
+
+    upload_to_play_store(
+      track: options[:track] || DEFAULT_TRACK,
+      aab: AAB_PATH,
+      json_key: json_key_path,
+      release_status: 'completed',
+      version_code: code,
+      # La ficha de la tienda se edita a mano en la consola; acá sólo subimos el
+      # binario y las notas de esta versión.
+      skip_upload_apk: true,
+      skip_upload_metadata: true,
+      skip_upload_images: true,
+      skip_upload_screenshots: true,
+      skip_upload_changelogs: false,
+      metadata_path: METADATA_DIR
+    )
+  end
+
+  desc 'Release completo: bump + checks + AAB + subida. Uso: release version:1.0.3 [build:5] [track:alpha] [notes:"..."] [skip_checks:true] [commit:false]'
+  lane :release do |options|
+    commit = options[:commit].to_s != 'false'
+
+    ensure_git_status_clean if commit
+
+    versions = bump(version: options[:version], build: options[:build])
+    check unless options[:skip_checks].to_s == 'true'
+    build
+    upload(track: options[:track], notes: options[:notes])
+
+    name = versions[:version_name]
+    code = versions[:version_code]
+
+    if commit
+      # El changelog de esta versión es un archivo nuevo: sin el `git_add` previo
+      # `git commit <paths>` no lo ve (untracked) y se pierde.
+      git_add(path: METADATA_DIR)
+      git_commit(
+        path: [GRADLE_FILE, PBXPROJ_FILE, APP_CONFIG_FILE, RELEASE_DOC, METADATA_DIR],
+        message: "release: #{name} (#{code})"
+      )
+      add_git_tag(tag: "v#{name}")
+      UI.success("Commit y tag v#{name} creados. El push queda a mano.")
+    end
+
+    UI.success("#{name} (#{code}) subida a '#{options[:track] || DEFAULT_TRACK}' y enviada a revisión.")
+  end
+
+  desc 'Promueve un versionCode ya publicado de un canal a otro. Uso: promote from:alpha to:production [build:5]'
+  lane :promote do |options|
+    code = (options[:build] || current_version_code).to_i
+
+    upload_to_play_store(
+      track: options[:from] || DEFAULT_TRACK,
+      track_promote_to: options[:to] || 'production',
+      version_code: code,
+      json_key: json_key_path,
+      release_status: 'completed',
+      skip_upload_apk: true,
+      skip_upload_aab: true,
+      skip_upload_metadata: true,
+      skip_upload_images: true,
+      skip_upload_screenshots: true,
+      skip_upload_changelogs: true
+    )
+
+    UI.success("versionCode #{code} promovido de #{options[:from] || DEFAULT_TRACK} a #{options[:to] || 'production'}.")
+  end
+
+  desc 'Valida que la clave de servicio tenga acceso a la app'
+  lane :validate_key do
+    validate_play_store_json_key(json_key: json_key_path)
+  end
+end

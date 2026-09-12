@@ -8,6 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `yarn ios` / `yarn android` — build & run on simulator/emulator. iOS requires `bundle exec pod install` from `ios/` after dep changes.
 - `yarn lint` — ESLint (`@react-native` config).
 - `yarn build:android` — AAB firmado de release para Play Store (`yarn build:android:apk` para un APK). Requiere `android/keystore.properties`; ver `RELEASE.md`.
+- `bundle exec fastlane android release version:X.Y.Z` — release completo de Android (bump de las 4 versiones, checks, AAB, subida a Play y envío a revisión). Lanes sueltos: `version`, `bump`, `check`, `build`, `upload`, `promote`. Necesita `fastlane/play-store-key.json`; ver `RELEASE.md` §8.
 - `yarn test` — Jest with the `react-native` preset. Run a single test with `yarn test path/to/file.test.tsx` or `yarn test -t "name pattern"`.
 - Type-check: `npx tsc --noEmit` (no script alias).
 

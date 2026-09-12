@@ -41,6 +41,9 @@ yarn build:android        # → android/app/build/outputs/bundle/release/app-rel
 Ese `.aab` es lo que se sube a Play Console. `yarn build:android:apk` genera un
 APK, que sirve para probar en un teléfono pero **no** para publicar.
 
+> El build + la subida están automatizados con fastlane: ver **§8**. Esta sección
+> queda como referencia de qué hace por debajo.
+
 Para verificar con qué clave quedó firmado:
 
 ```sh
@@ -53,7 +56,9 @@ El SHA-1 que imprime tiene que ser el de arriba.
 ## 3. Versionado
 
 Antes de cada subida hay que subir `versionCode` (Play rechaza uno repetido).
-Los cuatro valores se mantienen a mano y tienen que coincidir:
+Los cuatro valores tienen que coincidir. `fastlane android bump` (§8) los escribe
+los cuatro de una; `fastlane android version` verifica que no se hayan
+desincronizado:
 
 | Dónde | Campo |
 | --- | --- |
@@ -140,3 +145,76 @@ Ojo con dos cosas:
 Play exige **API 36 (Android 16)** para apps nuevas desde el 31/8/2026. El
 proyecto está en `targetSdk 36` (`android/build.gradle`); bajarlo hace que Play
 rechace el AAB al subirlo.
+
+## 8. Automatización con fastlane
+
+Todo el release de Android —bump de versión, checks, AAB firmado, subida a Play y
+envío a revisión— corre con un comando:
+
+```sh
+bundle exec fastlane android release version:1.0.3
+```
+
+### Puesta a punto (una sola vez)
+
+fastlane habla con la Play Developer API mediante una **cuenta de servicio**. Sin
+esa clave no puede subir nada.
+
+1. **Google Cloud Console** (proyecto `koru-507923`) → *IAM y administración* →
+   *Cuentas de servicio* → **Crear cuenta de servicio**. No hace falta darle
+   ningún rol de IAM: los permisos salen de Play Console, no de Cloud.
+2. En la cuenta recién creada → pestaña *Claves* → *Agregar clave* → *Crear clave
+   nueva* → **JSON**. Se descarga el archivo.
+3. Guardalo como **`fastlane/play-store-key.json`**. Está en `.gitignore` a
+   propósito: esa clave puede publicar versiones de la app, tratala como el
+   keystore. Si preferís otra ruta, exportá `SUPPLY_JSON_KEY_FILE`.
+4. **Play Console** → *Usuarios y permisos* → *Invitar a un usuario* → pegá el
+   email de la cuenta de servicio (`...@koru-507923.iam.gserviceaccount.com`) →
+   en *Permisos de la app* agregá **Koru — Test de Salto** y tildá:
+   - *Ver información de la app*
+   - *Crear y editar versiones en borrador*
+   - *Publicar en canales de prueba* (y *Publicar versiones de producción*
+     cuando producción se desbloquee)
+5. Verificá que quedó bien:
+
+   ```sh
+   bundle exec fastlane android validate_key
+   ```
+
+### Lanes
+
+| Lane | Qué hace |
+| --- | --- |
+| `android version` | Muestra la versión y verifica que los cuatro lugares de §3 coincidan |
+| `android bump version:1.0.3 [build:5]` | Escribe versionName/versionCode en los cuatro lugares. Sin `build:` incrementa el actual |
+| `android check` | `tsc --noEmit`, `yarn lint`, `yarn test` |
+| `android build` | AAB firmado de release (falla si falta `keystore.properties`) |
+| `android upload [track:alpha] [notes:"..."]` | Sube el AAB ya generado y lo manda a revisión |
+| `android release version:1.0.3 [...]` | Los cuatro anteriores en orden |
+| `android promote from:alpha to:production [build:5]` | Mueve un versionCode ya publicado entre canales |
+| `android validate_key` | Chequea la clave de servicio |
+
+Opciones de `release`: `build:`, `track:`, `notes:`, `skip_checks:true`,
+`commit:false`.
+
+### Detalles que importan
+
+- **El canal por defecto es `alpha`**, que es *Prueba cerrada - Alpha*.
+  Producción sigue bloqueada hasta cumplir el requisito de 12 testers / 14 días,
+  así que `promote ... to:production` va a fallar hasta entonces. Si alguna vez
+  el nombre del track no matchea, `supply` lista los válidos en el error.
+- **Las notas de la versión** van a
+  `fastlane/metadata/android/es-419/changelogs/<versionCode>.txt`. `upload` lo
+  escribe solo a partir de `notes:` (por defecto *"Mejoras de estabilidad y
+  correcciones menores."*). Si querés un texto largo, editá el `.txt` y corré
+  `upload` sin `notes:`.
+- **`release` commitea y taggea** (`release: 1.0.3 (5)` + tag `v1.0.3`) pero
+  **no pushea**: eso queda a mano. Con `commit:false` no toca git. Con el commit
+  activado exige el working tree limpio antes de arrancar.
+- **La ficha de la tienda no se toca.** `upload` corre con
+  `skip_upload_metadata/images/screenshots`, así que título, descripción y
+  capturas se siguen editando a mano en la consola.
+- **Ruby**: el proyecto corre con el Ruby del sistema (2.6.10) y fastlane queda
+  clavado en 2.231.1, que es la última que lo soporta. fastlane ya avisa que va a
+  pedir Ruby ≥ 3.2; cuando eso pase hay que instalar un Ruby moderno con rbenv y
+  correr `bundle update fastlane`.

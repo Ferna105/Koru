@@ -1,0 +1,7 @@
+# Cuenta y app de Play Console. El `package_name` es `com.koru.ok`, no `com.koru`
+# (ver RELEASE.md §6).
+package_name('com.koru.ok')
+
+# La clave de servicio NO está versionada. Por defecto se busca en
+# `fastlane/play-store-key.json`; se puede mover con SUPPLY_JSON_KEY_FILE.
+json_key_file(ENV['SUPPLY_JSON_KEY_FILE'] || File.expand_path('play-store-key.json', File.dirname(__FILE__)))

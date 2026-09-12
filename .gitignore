@@ -55,6 +55,10 @@ yarn-error.log
 **/fastlane/screenshots
 **/fastlane/test_output
 
+# Clave de servicio de la Play Developer API (ver RELEASE.md). Da permiso de
+# publicación sobre la app: nunca se versiona.
+fastlane/play-store-key.json
+
 # Bundle artifact
 *.jsbundle
 
