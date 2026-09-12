@@ -59,7 +59,9 @@ clave que firme la app necesita su propio client de Android en la consola.
 | --- | --- | --- |
 | Debug (`android/app/debug.keystore`, versionado) | `5E:8F:16:06:2E:A3:CD:2C:4A:0D:54:78:76:BA:A6:F3:8C:AB:F6:25` | Registrada |
 | Upload (`android/app/koru-upload.keystore`, fuera de git) | `60:41:34:01:79:84:C4:01:83:B9:BD:AD:14:D8:FF:9B:F2:C2:2F:05` | Registrada (client `Koru Android (upload)`, 8 sept 2026) |
-| Play App Signing | `1F:93:26:39:76:AE:54:F9:38:B8:19:D4:7E:06:9F:8D:18:6D:6C:14` | Registrada (client `Koru Android (Play App Signing)`, 12 sept 2026) |
+| **APK distribuido por Play** ← la que importa | `A7:FF:ED:14:A3:3D:04:E4:03:26:56:8F:5E:0B:44:A5:BF:CE:E6:4F` | Registrada (client `Koru Android (APK distribuido por Play)`, 12 sept 2026) |
+| Play Console → "clave clásica" | `1F:93:26:39:76:AE:54:F9:38:B8:19:D4:7E:06:9F:8D:18:6D:6C:14` | Registrada, pero **no es la del APK** |
+| Play Console → "clave poscuántica" | `61:E3:A4:90:61:AD:8E:A4:C5:FF:C7:DA:76:4F:36:3F:41:E4:2B:6C` | Registrada, pero **no es la del APK** |
 
 Para releerlas:
 
@@ -78,6 +80,21 @@ ande en debug y en el AAB local**.
 
 Ninguno: las tres SHA-1 (debug, upload y Play App Signing) están registradas.
 
+> ⚠️ **No confíes en las huellas que muestra Play Console.** La pantalla
+> *Protegida con Play → Firma de aplicaciones* muestra una "clave clásica" y una
+> "poscuántica", y **ninguna de las dos es la que firma el APK que se distribuye**.
+> Registrar esas dos no arregló el login.
+>
+> La única fuente confiable es el APK real. Se baja desde *Explorador de app
+> bundles → (versión) → Descargas → «APK firmado y universal»* y se lee así:
+>
+> ```sh
+> $ANDROID_HOME/build-tools/36.0.0/apksigner verify --print-certs 2.apk
+> # Signer #1 certificate SHA-1 digest: a7ffed14a33d04e40326568f5e0b44a5bfcee64f
+> ```
+>
+> Ese valor, en mayúsculas y separado por `:`, es el que va en el client de Android.
+>
 > **Síntoma si falta alguna:** el login devuelve `DEVELOPER_ERROR` (código 10).
 > Pasó al publicar la primera versión: la app andaba en debug y con el APK
 > firmado con la clave de subida, pero fallaba al instalarla desde Play, porque
