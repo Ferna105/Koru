@@ -9,9 +9,10 @@ import React, {
   useState,
 } from 'react';
 import { Animated, Pressable, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from 'design-system';
 import { Text } from 'components/Text/text.component';
-import { styles } from './toast.styles';
+import { styles, TOAST_BOTTOM_OFFSET } from './toast.styles';
 
 export type ToastTone = 'info' | 'success' | 'warning' | 'danger';
 
@@ -39,6 +40,9 @@ const DEFAULT_DURATION = 3200;
 export const ToastProvider = ({ children }: { children: ReactNode }) => {
   const [items, setItems] = useState<ToastConfig[]>([]);
   const counter = useRef(0);
+  // El host flota sobre el borde inferior, que en Android edge-to-edge lo ocupa
+  // la barra de navegación.
+  const insets = useSafeAreaInsets();
 
   const hide = useCallback((id: number) => {
     setItems(prev => prev.filter(i => i.id !== id));
@@ -64,7 +68,9 @@ export const ToastProvider = ({ children }: { children: ReactNode }) => {
   return (
     <ToastContext.Provider value={value}>
       {children}
-      <View pointerEvents="box-none" style={styles.host}>
+      <View
+        pointerEvents="box-none"
+        style={[styles.host, { bottom: insets.bottom + TOAST_BOTTOM_OFFSET }]}>
         {items.map(t => (
           <ToastView key={t.id} cfg={t} onDismiss={() => hide(t.id)} />
         ))}

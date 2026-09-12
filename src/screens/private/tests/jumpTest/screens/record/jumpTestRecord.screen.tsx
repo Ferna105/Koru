@@ -26,6 +26,7 @@ import {
   VideoFile,
 } from 'react-native-vision-camera';
 import { useFocusEffect } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button, Container, Icon, RecordButton, Text } from 'components';
 import { tokens, useTheme } from 'design-system';
 import { JumpTestStackScreenProps } from 'navigation/types';
@@ -38,6 +39,10 @@ export const JumpTestRecord = ({
   navigation,
 }: JumpTestStackScreenProps<'JumpTestRecord'>) => {
   const t = useTheme();
+  // La cámara es full-bleed (no pasa por Container), así que los overlays se
+  // posicionan a mano y tienen que esquivar la status bar y la barra de
+  // navegación de Android, que con edge-to-edge quedan encima.
+  const insets = useSafeAreaInsets();
   const { jumpType } = route.params;
   const jump = getJumpType(jumpType);
   const camPerm = useCameraPermission();
@@ -308,7 +313,7 @@ export const JumpTestRecord = ({
       </View>
 
       {showIdleControls && (
-        <View style={styles.hintTop}>
+        <View style={[styles.hintTop, { top: insets.top + HINT_TOP_OFFSET }]}>
           <Text variant="label" style={styles.hintText}>
             {jump.title.toUpperCase()}
           </Text>
@@ -320,7 +325,11 @@ export const JumpTestRecord = ({
 
       {showIdleControls && (
         <Pressable
-          style={[styles.topLeft, styles.iconBtn]}
+          style={[
+            styles.topLeft,
+            styles.iconBtn,
+            { top: insets.top + CONTROLS_TOP_OFFSET },
+          ]}
           onPress={handleClose}
           hitSlop={t.layout.minHitSlop}>
           <Icon name="X" size="L" />
@@ -329,7 +338,11 @@ export const JumpTestRecord = ({
 
       {showIdleControls && (
         <Pressable
-          style={[styles.topRight, styles.iconBtn]}
+          style={[
+            styles.topRight,
+            styles.iconBtn,
+            { top: insets.top + CONTROLS_TOP_OFFSET },
+          ]}
           onPress={toggleLens}
           hitSlop={t.layout.minHitSlop}>
           <Icon name="Settings" size="L" />
@@ -337,7 +350,12 @@ export const JumpTestRecord = ({
       )}
 
       {isRecording && (
-        <Animated.View style={[styles.recBadge, recAnimatedStyle]}>
+        <Animated.View
+          style={[
+            styles.recBadge,
+            { top: insets.top + CONTROLS_TOP_OFFSET },
+            recAnimatedStyle,
+          ]}>
           <View
             style={[styles.recDot, { backgroundColor: t.color.brand.danger }]}
           />
@@ -357,7 +375,11 @@ export const JumpTestRecord = ({
         </Animated.View>
       )}
 
-      <View style={styles.bottomBar}>
+      <View
+        style={[
+          styles.bottomBar,
+          { bottom: insets.bottom + BOTTOM_BAR_OFFSET },
+        ]}>
         {showIdleControls && (
           <RecordButton state="idle" onPress={startCountdown} />
         )}
@@ -373,6 +395,10 @@ export const JumpTestRecord = ({
 };
 
 const FRAME_SIZE_PCT = 0.6;
+/** Separaciones de los overlays medidas desde el borde seguro, no desde el borde físico. */
+const CONTROLS_TOP_OFFSET = 12;
+const HINT_TOP_OFFSET = 62;
+const BOTTOM_BAR_OFFSET = 24;
 
 const styles = StyleSheet.create({
   fill: { flex: 1 },
@@ -402,7 +428,6 @@ const styles = StyleSheet.create({
   },
   hintTop: {
     position: 'absolute',
-    top: 100,
     left: tokens.spacing['5xl'],
     right: tokens.spacing['5xl'],
     alignItems: 'center',
@@ -416,12 +441,10 @@ const styles = StyleSheet.create({
   },
   topLeft: {
     position: 'absolute',
-    top: 50,
     left: tokens.layout.screenPadding,
   },
   topRight: {
     position: 'absolute',
-    top: 50,
     right: tokens.layout.screenPadding,
   },
   iconBtn: {
@@ -434,7 +457,6 @@ const styles = StyleSheet.create({
   },
   recBadge: {
     position: 'absolute',
-    top: 50,
     alignSelf: 'center',
     flexDirection: 'row',
     alignItems: 'center',
@@ -463,7 +485,6 @@ const styles = StyleSheet.create({
   },
   bottomBar: {
     position: 'absolute',
-    bottom: 40,
     left: 0,
     right: 0,
     alignItems: 'center',

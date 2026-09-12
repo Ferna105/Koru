@@ -40,7 +40,6 @@ export const styles = StyleSheet.create({
     borderTopRightRadius: tokens.radius.xl,
     paddingHorizontal: tokens.spacing['2xl'],
     paddingTop: tokens.spacing.md,
-    paddingBottom: tokens.spacing['2xl'],
     ...tokens.elevation.lg,
   },
   handle: {

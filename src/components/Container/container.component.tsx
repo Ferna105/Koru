@@ -1,9 +1,10 @@
-import React, { ReactNode } from 'react';
+import React, { ReactNode, useContext } from 'react';
 import { ScrollView, StyleProp, View, ViewStyle } from 'react-native';
 // El SafeAreaView de react-native es no-op en Android y está deprecado; con
 // targetSdk 36 Android 16 dibuja edge-to-edge, así que los insets tienen que
 // salir de safe-area-context para que la UI no quede bajo las barras.
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Edge, SafeAreaView } from 'react-native-safe-area-context';
+import { BottomTabBarHeightContext } from '@react-navigation/bottom-tabs';
 import { useTheme } from 'design-system';
 import { Tokens } from 'design-system';
 import { styles } from './container.styles';
@@ -42,9 +43,18 @@ export const Container = ({
 }: ContainerProps) => {
   const tokens = useTheme();
   const bg = tokens.color.bg[variant];
+  // Dentro de los tabs la BottomNav ya reserva el alto de la barra de
+  // navegación de Android; si acá también aplicáramos el inset inferior
+  // quedaría el doble de aire sobre el tab bar.
+  const insideTabs = useContext(BottomTabBarHeightContext) != null;
+  const edges: Edge[] = insideTabs
+    ? ['top', 'left', 'right']
+    : ['top', 'left', 'right', 'bottom'];
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: bg }]}>
+    <SafeAreaView
+      edges={edges}
+      style={[styles.safeArea, { backgroundColor: bg }]}>
       <Content scrollable={scrollable}>
         <View
           style={[

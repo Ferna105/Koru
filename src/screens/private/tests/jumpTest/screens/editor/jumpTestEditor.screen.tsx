@@ -13,6 +13,7 @@ import {
   Alert,
 } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Video, {
   VideoRef,
   OnLoadData,
@@ -48,6 +49,9 @@ export const JumpTestEditor = ({
   navigation,
 }: JumpTestStackScreenProps<'JumpTestEditor'>) => {
   const t = useTheme();
+  // La pantalla es full-bleed (el video llega al borde superior), así que
+  // aplicamos los insets a mano en vez de envolver todo en Container.
+  const insets = useSafeAreaInsets();
   const {
     jumpType,
     videoUri,
@@ -304,7 +308,11 @@ export const JumpTestEditor = ({
   }, [videoSize]);
 
   return (
-    <View style={[styles.screen, { backgroundColor: t.color.bg.base }]}>
+    <View
+      style={[
+        styles.screen,
+        { backgroundColor: t.color.bg.base, paddingTop: insets.top },
+      ]}>
       <View style={[styles.videoWrapper, { aspectRatio }]}>
         <Video
           ref={videoRef}
@@ -411,7 +419,11 @@ export const JumpTestEditor = ({
         </View>
       </View>
 
-      <View style={styles.footer}>
+      <View
+        style={[
+          styles.footer,
+          { paddingBottom: insets.bottom + tokens.spacing['2xl'] },
+        ]}>
         <Button variant="primary" iconLeft="Check" onPress={goCalculate}>
           Calcular altura
         </Button>
@@ -574,6 +586,5 @@ const styles = StyleSheet.create({
   },
   footer: {
     padding: tokens.layout.screenPadding,
-    paddingBottom: tokens.spacing['2xl'],
   },
 });

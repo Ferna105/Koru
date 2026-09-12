@@ -1,12 +1,14 @@
 import { StyleSheet } from 'react-native';
 import { tokens } from 'design-system';
 
+/** Separación del host respecto del borde seguro inferior. */
+export const TOAST_BOTTOM_OFFSET = tokens.spacing['2xl'];
+
 export const styles = StyleSheet.create({
   host: {
     position: 'absolute',
     left: tokens.spacing.lg,
     right: tokens.spacing.lg,
-    bottom: tokens.spacing['2xl'],
     gap: tokens.spacing.md,
   },
   toast: {

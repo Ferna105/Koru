@@ -1,5 +1,6 @@
 import React from 'react';
 import { Pressable, Text as RNText, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from 'design-system';
 import { Icon } from 'components/Icon/icon.component';
 import { Icons } from 'components/Icon/icon.interfaces';
@@ -26,9 +27,12 @@ export const BottomNav = ({
   showAccent = true,
 }: BottomNavProps) => {
   const tokens = useTheme();
+  // Android dibuja edge-to-edge desde targetSdk 35, así que la barra de botones
+  // (o el gesture pill) se superpone al nav si no reservamos su alto acá.
+  const insets = useSafeAreaInsets();
 
   return (
-    <View style={styles.base}>
+    <View style={[styles.base, { paddingBottom: insets.bottom }]}>
       {showAccent && <View style={styles.accent} />}
       <View style={styles.items}>
         {items.map(item => {

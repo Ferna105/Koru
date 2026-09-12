@@ -1,6 +1,8 @@
 import React, { ReactNode } from 'react';
 import { Modal as RNModal, Pressable, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Text } from 'components/Text/text.component';
+import { tokens } from 'design-system';
 import { styles } from 'components/Modal/modal.styles';
 
 interface SheetProps {
@@ -22,24 +24,38 @@ export const Sheet = ({
   title,
   children,
   actions,
-}: SheetProps) => (
-  <RNModal
-    visible={visible}
-    transparent
-    animationType="slide"
-    onRequestClose={onRequestClose}
-    statusBarTranslucent>
-    <Pressable style={styles.sheetScrim} onPress={onRequestClose}>
-      <Pressable style={styles.sheet} onPress={() => undefined}>
-        <View style={styles.handle} />
-        {title && (
-          <Text variant="displaySM" family="display" style={styles.sheetTitle}>
-            {title}
-          </Text>
-        )}
-        {children && <View style={{ marginBottom: 20 }}>{children}</View>}
-        {actions && <View style={styles.actions}>{actions}</View>}
+}: SheetProps) => {
+  // El panel docka contra el borde inferior; con edge-to-edge en Android eso es
+  // justo donde vive la barra de navegación.
+  const insets = useSafeAreaInsets();
+
+  return (
+    <RNModal
+      visible={visible}
+      transparent
+      animationType="slide"
+      onRequestClose={onRequestClose}
+      statusBarTranslucent>
+      <Pressable style={styles.sheetScrim} onPress={onRequestClose}>
+        <Pressable
+          style={[
+            styles.sheet,
+            { paddingBottom: insets.bottom + tokens.spacing['2xl'] },
+          ]}
+          onPress={() => undefined}>
+          <View style={styles.handle} />
+          {title && (
+            <Text
+              variant="displaySM"
+              family="display"
+              style={styles.sheetTitle}>
+              {title}
+            </Text>
+          )}
+          {children && <View style={{ marginBottom: 20 }}>{children}</View>}
+          {actions && <View style={styles.actions}>{actions}</View>}
+        </Pressable>
       </Pressable>
-    </Pressable>
-  </RNModal>
-);
+    </RNModal>
+  );
+};
